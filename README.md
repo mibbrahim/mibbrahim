@@ -52,21 +52,32 @@
 
 ---
 
-## 📈 Contribution Activity
+## 🌟 GitHub Showcase
 
+### 📈 Contribution Activity Graph
 <p align="center">
   <img src="https://github-readme-activity-graph.vercel.app/graph?username=mibbrahim&theme=tokyo-night&area=true" alt="GitHub Contribution Graph"/>
 </p>
 
+---
+
+### 🧭 Visitor Map
+<p align="center">
+  <img src="https://visitcount.itsvg.in/api?id=mibbrahim&label=Profile%20Visitors&color=12&icon=5&pretty=true" />
+</p>
 
 ---
 
-## 🏅 Highlights
+### 🎯 Achievements & Goals
 
-- 🎯 Built and deployed real-world ML models 
-- 🐍 Skilled in Python-based data science stack (Pandas, NumPy, Scikit-learn, Jupyter)
-- 📚 Always learning — currently diving into Deep Learning and Generative AI
-- 🚀 Passionate about making data-driven decisions and AI for Good
+- 🧠 Built and deployed multiple machine learning projects:  
+  🔹 Fake News Detection  
+  🔹 Taxi Trip Duration Prediction  
+  🔹 LSTM-based Stock Forecasting  
+- 📚 Currently learning: Generative AI & Deep Learning  
+- 🔍 Exploring: Real-world data, Kaggle competitions & open-source contributions  
+- 🚀 Vision: To build AI tools that actually make life easier for people  
+
 
 
 ---
