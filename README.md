@@ -22,10 +22,9 @@
 
 ### 🚀 About Me
 
-- 🔭 Currently working on: **LSTM Forecasting**, **Fake News Detection**, & **Taxi Trip Prediction**
+- 🔭 Currently working on: **Real-Time Multimodal Misinformation Detection at Scale**
 - 🌱 Exploring: **Deep Learning** & **AI for Social Good**
 - 💬 Let’s talk about: `Python`, `Pandas`, `Scikit-learn`, `Jupyter`, and all things **data wrangling**
-- 📫 Reach me at: `youremail@example.com`
 - 🧠 Motto: _"Turning messy data into meaningful insights!"_
 
 ---
