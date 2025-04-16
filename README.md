@@ -44,7 +44,7 @@
 ---
 
 ### 📌 Featured Projects
-
+ 
 - 🔹 [Fake News Detection](https://github.com/mibbrahim/fake_News_Detection)  
 - 🔹 [Taxi Trip Duration Prediction](https://github.com/mibbrahim/TaxiTripProject)  
 - 🔹 [Titanic Survival Prediction](https://github.com/mibbrahim/TitanicSurvivalPrediction_DataScience)  
