@@ -52,19 +52,19 @@
 
 ---
 
-### 📊 GitHub Stats & Streaks
+## 📊 GitHub Stats & Streaks
 
 <p align="center">
   <img src="https://github-readme-stats.vercel.app/api?username=mibbrahim&show_icons=true&theme=tokyonight" alt="GitHub Stats" />
-  <img src="https://github-readme-streak-stats.herokuapp.com/?user=mibbrahim&theme=tokyonight" alt="GitHub Streak" />
+  <img src="https://github-readme-streak-stats.herokuapp.com/?user=mibbrahim&theme=tokyonight" alt="GitHub Streak"/>
 </p>
 
 ---
 
-### 🏆 GitHub Trophies
+## 🏆 GitHub Trophies
 
 <p align="center">
-  <img src="https://github-profile-trophy.vercel.app/?username=mibbrahim&theme=tokyonight&no-bg=true&no-frame=true&exclude=Stars,Followers,Issues" />
+  <img src="https://github-profile-trophy.vercel.app/?username=mibbrahim&theme=tokyonight&no-frame=true&no-bg=true&margin-w=15&exclude=Stars,Followers,Issues,PullRequest,Reviews" />
 </p>
 
 ---
