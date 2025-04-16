@@ -50,35 +50,15 @@
 - 🔹 [Titanic Survival Prediction](https://github.com/mibbrahim/TitanicSurvivalPrediction_DataScience)  
 - 🔹 [Stock Price Forecasting with LSTM](https://github.com/mibbrahim/StockForecastingLSTM)  
 
----
 
-## 🌟 GitHub Showcase
+## 📈 Contribution Activity
 
-### 📈 Contribution Activity Graph
 <p align="center">
-  <img src="https://github-readme-activity-graph.vercel.app/graph?username=mibbrahim&theme=tokyo-night&area=true" alt="GitHub Contribution Graph"/>
+  <img src="https://github-readme-activity-graph.vercel.app/graph?username=mibbrahim&theme=github&area=true" alt="GitHub Contribution Graph"/>
 </p>
 
----
-
-### 🧭 Visitor Map
-<p align="center">
-  <img src="https://visitcount.itsvg.in/api?id=mibbrahim&label=Profile%20Visitors&color=12&icon=5&pretty=true" />
-</p>
 
 ---
-
-### 🎯 Achievements & Goals
-
-- 🧠 Built and deployed multiple machine learning projects:  
-  🔹 Fake News Detection  
-  🔹 Taxi Trip Duration Prediction  
-  🔹 LSTM-based Stock Forecasting  
-- 📚 Currently learning: Generative AI & Deep Learning  
-- 🔍 Exploring: Real-world data, Kaggle competitions & open-source contributions  
-- 🚀 Vision: To build AI tools that actually make life easier for people  
-
-
 
 ---
 
