@@ -10,10 +10,10 @@
   <a href="https://github.com/mibbrahim">
     <img src="https://komarev.com/ghpvc/?username=mibbrahim&label=Profile%20views&color=0e75b6&style=flat" alt="Profile Views" />
   </a>
-  <a href="https://linkedin.com/in/your-linkedin" target="_blank">
+  <a href="https://linkedin.com/in/mouhammadibrahim" target="_blank">
     <img src="https://img.shields.io/badge/LinkedIn-blue?style=flat-square&logo=linkedin" alt="LinkedIn" />
   </a>
-  <a href="mailto:youremail@example.com">
+  <a href="mailto:ibbraahimmuhammad@gmail.com">
     <img src="https://img.shields.io/badge/Email-D14836?style=flat-square&logo=gmail&logoColor=white" alt="Email" />
   </a>
 </p>
@@ -54,7 +54,7 @@
 ## 📈 Contribution Activity
 
 <p align="center">
-  <img src="https://github-readme-activity-graph.vercel.app/graph?username=mibbrahim&theme=github&area=true" alt="GitHub Contribution Graph"/>
+  <img src="https://github-readme-activity-graph.vercel.app/graph?username=mibbrahim&theme=react&area=true&color=000000&bg_color=ffffff&line=007acc&point=ff0000" />
 </p>
 
 
