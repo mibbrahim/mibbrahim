@@ -52,20 +52,21 @@
 
 ---
 
-## 📊 GitHub Stats & Streaks
+## 📈 Contribution Activity
 
 <p align="center">
-  <img src="https://github-readme-stats.vercel.app/api?username=mibbrahim&show_icons=true&theme=tokyonight" alt="GitHub Stats" />
-  <img src="https://github-readme-streak-stats.herokuapp.com/?user=mibbrahim&theme=tokyonight" alt="GitHub Streak"/>
+  <img src="https://github-readme-activity-graph.vercel.app/graph?username=mibbrahim&theme=tokyo-night&area=true" alt="GitHub Contribution Graph"/>
 </p>
+
 
 ---
 
-## 🏆 GitHub Trophies
+## 🏅 Highlights
 
-<p align="center">
-  <img src="https://github-profile-trophy.vercel.app/?username=mibbrahim&theme=tokyonight&no-frame=true&no-bg=true&margin-w=15&exclude=Stars,Followers,Issues,PullRequest,Reviews" />
-</p>
+- 🎯 Built and deployed real-world ML models 
+- 🐍 Skilled in Python-based data science stack (Pandas, NumPy, Scikit-learn, Jupyter)
+- 📚 Always learning — currently diving into Deep Learning and Generative AI
+- 🚀 Passionate about making data-driven decisions and AI for Good
 
 
 ---
