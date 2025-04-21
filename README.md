@@ -44,8 +44,8 @@
 
 ### 📌 Featured Projects
  
-- 🔹 [Fake News Detection](https://github.com/mibbrahim/fake_News_Detection)  
-- 🔹 [Taxi Trip Duration Prediction](https://github.com/mibbrahim/TaxiTripProject)  
+- 🔹 [HubsSpot Prospect Conversion](https://github.com/mibbrahim/fake_News_Detection](https://github.com/mibbrahim/HubSpot-Prospect-Conversion)  
+- 🔹 [Medical Agent]([https://github.com/mibbrahim/TaxiTripProject](https://github.com/mibbrahim/MedicalAiAgents))  
 - 🔹 [Titanic Survival Prediction](https://github.com/mibbrahim/TitanicSurvivalPrediction_DataScience)  
 - 🔹 [Stock Price Forecasting with LSTM](https://github.com/mibbrahim/StockForecastingLSTM)  
 
