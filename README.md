@@ -50,16 +50,6 @@
 - 🔹 [Stock Price Forecasting with LSTM](https://github.com/mibbrahim/StockForecastingLSTM)  
 
 
-## 📈 Contribution Activity
-
-<p align="center">
-  <img src="https://github-readme-activity-graph.vercel.app/graph?username=mibbrahim&theme=react&area=true&color=000000&bg_color=ffffff&line=007acc&point=ff0000" />
-</p>
-
-
----
-
----
 
 ### ☕ Productivity Tracker
 
