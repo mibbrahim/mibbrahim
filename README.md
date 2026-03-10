@@ -1,7 +1,3 @@
-<!-- Banner -->
-<p align="center">
-  <img src="https://raw.githubusercontent.com/mibbrahim/mibbrahim/main/banner.png" alt="Cover Image" width="100%">
-</p>
 
 <h1 align="center">Hi 👋, I'm Ibrahim</h1>
 <h3 align="center">🔍 Data Science Enthusiast | 🤖 ML Explorer | 🐍 Python Tinkerer</h3>
