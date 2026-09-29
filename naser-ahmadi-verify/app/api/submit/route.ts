@@ -62,6 +62,7 @@ export async function POST(req: Request) {
       groupNumber: str(ins.groupNumber, 40),
     },
     cashPay: body.cashPay === true,
+    manual: body.manual === true,
     images,
   };
 

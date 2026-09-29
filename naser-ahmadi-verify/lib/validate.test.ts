@@ -59,6 +59,13 @@ test("plan not on list needs review, cash pay skips insurance checks", () => {
   assert.equal(statusFor(checks, true), "cash_pay");
 });
 
+test("typed-in entries skip the photo checks", () => {
+  const f = form({ manual: true, images: {} });
+  const checks = runChecks(f, PLANS, TODAY);
+  assert.equal(checks.some((c) => c.id.endsWith("_photo")), false);
+  assert.equal(statusFor(checks, false), "verified");
+});
+
 test("helpers", () => {
   assert.equal(normalizePhone("+1 (415) 555-0199"), "4155550199");
   assert.equal(normalizePhone("555-0199"), null);

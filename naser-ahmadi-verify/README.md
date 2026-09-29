@@ -2,12 +2,13 @@
 
 A mobile-first page (Next.js / React) that the agent texts to a patient who is on the phone with them. The agent's link carries the patient's mobile number (`/?phone=3105550100`; `?mobile=` and `?p=` also work), and it is shown pre-filled on the confirm screen as "From the text message we sent you".
 
-1. **Scan your driver's license** (front + back). The PDF417 barcode on the back is read on the phone and fills in name, date of birth, address, license number and expiration.
-2. **Scan your insurance card**. The card text is read on the phone (OCR, tesseract.js) to find the insurer, member ID and group number. Patients without insurance tap **"I'll pay cash"**.
-3. **Are these details correct?** Everything is pre-filled and editable; the patient ticks the confirmation box and submits.
-4. The patient gets a 6-character code to read to the agent.
+1. **Verify your date of birth** (design-system date picker). It is later matched against the date of birth read from the license.
+2. **Scan your driver's license** (front + back). The PDF417 barcode on the back is read on the phone and fills in name, date of birth, address, license number and expiration.
+3. **Scan your insurance card**. The card text is read on the phone (OCR, tesseract.js) to find the insurer, member ID and group number. Patients without insurance tap **"I'll pay cash"**.
+4. **Are these details correct?** Everything is pre-filled and editable; the patient taps **Yes, submit**.
+5. The patient gets a 6-character code to read to the agent.
 
-Patients who'd rather not use the link tap **"I'd rather do this over the phone"**.
+Patients who'd rather not scan tap **"I'd rather do this over the phone"** and choose **Tell the agent** or **Type it in myself** (a plain form, no photos; flagged for the agent as typed in).
 
 UI components come from the PracticeEHR design system (https://design-components-ks.netlify.app/). `app/ds/tokens.css` and `app/ds/components.css` are vendored verbatim; `app/app.css` only handles layout.
 
@@ -15,7 +16,7 @@ The agent opens **`/agent`**, signs in with the agent PIN, and sees each submiss
 
 | Check | Rule |
 |---|---|
-| Date of birth | Read from the license and plausible |
+| Date of birth | Date entered on the first screen matches the date on the license |
 | California license | Issuing state is CA and the number is 1 letter + 7 digits |
 | Not expired | Expiration date is today or later |
 | California address | ZIP code is in California (state found from ZIP), street and city present |
