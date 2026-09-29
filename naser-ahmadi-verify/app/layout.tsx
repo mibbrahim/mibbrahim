@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import "./globals.css";
+import "./ds/tokens.css";
+import "./ds/components.css";
+import "./app.css";
 
 export const metadata: Metadata = {
   title: "Patient Verification",
@@ -10,13 +12,22 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0f5c73",
+  themeColor: "#FFFFFF",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&family=JetBrains+Mono:wght@400;500&display=swap"
+        />
+      </head>
+      <body className="ds-root">{children}</body>
     </html>
   );
 }

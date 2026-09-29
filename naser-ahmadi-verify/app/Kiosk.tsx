@@ -1,14 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
+import { Icon, type IconName } from "@/components/Icon";
+import { Select } from "@/components/Select";
+import { Stepper, TopNav } from "@/components/TopNav";
 import { isAamva, parseAamva } from "@/lib/aamva";
-import { compressImage, readLicenseBarcode } from "@/lib/image";
+import { compressImage, readCardText, readLicenseBarcode } from "@/lib/image";
+import { parseInsuranceText } from "@/lib/insurance";
 import { OTHER_PLAN, type Check, type IntakeForm } from "@/lib/types";
 
-type Step = "welcome" | "phone" | "identity" | "license" | "insurance" | "review" | "done" | "byPhone";
-const FLOW: Step[] = ["phone", "identity", "license", "insurance", "review"];
+type Step = "license" | "insurance" | "confirm" | "done" | "byPhone";
+const FLOW: Step[] = ["license", "insurance", "confirm"];
+const FLOW_LABELS = ["License", "Insurance", "Confirm"];
 
 type Result = { code: string; status: "verified" | "needs_review" | "cash_pay"; checks: Check[] };
+type Notice = { tone: "verified" | "pending" | "failed"; text: string } | null;
+type ImageKey = keyof IntakeForm["images"];
 
 function formatPhone(s: string): string {
   let d = s.replace(/\D/g, "");
@@ -31,20 +38,23 @@ const emptyForm = (phone: string): IntakeForm => ({
   images: {},
 });
 
-export function Kiosk({ practice, plans, initialPhone }: { practice: string; plans: string[]; initialPhone: string }) {
-  const [step, setStep] = useState<Step>("welcome");
+export function Kiosk({ plans, initialPhone }: { plans: string[]; initialPhone: string }) {
+  // The phone number comes from the texted link; only ask for it if it's missing.
+  const [askPhone] = useState(() => initialPhone.replace(/\D/g, "").length < 10);
+  const [step, setStep] = useState<Step>("license");
   const [form, setForm] = useState<IntakeForm>(() => emptyForm(initialPhone));
+  const [consent, setConsent] = useState(false);
   const [error, setError] = useState("");
-  const [busy, setBusy] = useState("");
-  const [scanNote, setScanNote] = useState("");
+  const [busy, setBusy] = useState<ImageKey | "submit" | "">("");
+  const [licenseNote, setLicenseNote] = useState<Notice>(null);
+  const [cardNote, setCardNote] = useState<Notice>(null);
+  const [ocrPct, setOcrPct] = useState<number | null>(null);
   const [result, setResult] = useState<Result | null>(null);
 
   const setLic = (patch: Partial<IntakeForm["license"]>) =>
     setForm((f) => ({ ...f, license: { ...f.license, ...patch } }));
   const setIns = (patch: Partial<IntakeForm["insurance"]>) =>
     setForm((f) => ({ ...f, insurance: { ...f.insurance, ...patch } }));
-  const setImg = (key: keyof IntakeForm["images"], v: string | undefined) =>
-    setForm((f) => ({ ...f, images: { ...f.images, [key]: v } }));
 
   const go = (s: Step) => {
     setError("");
@@ -52,69 +62,92 @@ export function Kiosk({ practice, plans, initialPhone }: { practice: string; pla
     window.scrollTo({ top: 0 });
   };
 
-  async function onPhoto(key: keyof IntakeForm["images"], file: File | undefined) {
+  async function onPhoto(key: ImageKey, file: File | undefined) {
     if (!file) return;
     setError("");
     setBusy(key);
+    let image: string;
     try {
-      setImg(key, await compressImage(file));
-      if (key === "licenseBack") {
-        setScanNote("Reading barcode…");
-        const text = await readLicenseBarcode(file).catch(() => null);
-        if (text && isAamva(text)) {
-          const d = parseAamva(text);
-          const { licenseNumber, ...rest } = d;
-          const patch = Object.fromEntries(
-            Object.entries({ ...rest, number: licenseNumber }).filter(([, v]) => v),
-          ) as Partial<IntakeForm["license"]>;
-          setLic({ ...patch, scanned: true });
-          setScanNote("Barcode read. Please check the details below.");
-        } else {
-          setScanNote("Couldn't read the barcode. Please type your details below, or retake the photo in good light.");
-        }
-      }
+      image = await compressImage(file);
+      setForm((f) => ({ ...f, images: { ...f.images, [key]: image } }));
     } catch {
-      setError("Couldn't load that photo. Please try again.");
-    } finally {
       setBusy("");
+      return setError("Couldn't load that photo. Please try again.");
+    }
+    setBusy("");
+
+    if (key === "licenseBack") {
+      setLicenseNote({ tone: "pending", text: "Reading the barcode on your license…" });
+      const text = await readLicenseBarcode(file).catch(() => null);
+      if (text && isAamva(text)) {
+        const { licenseNumber, ...rest } = parseAamva(text);
+        const patch = Object.fromEntries(
+          Object.entries({ ...rest, number: licenseNumber }).filter(([, v]) => v),
+        ) as Partial<IntakeForm["license"]>;
+        setLic({ ...patch, scanned: true });
+        setLicenseNote({ tone: "verified", text: `Got it${patch.firstName ? `, ${patch.firstName}` : ""}! We read your details from the barcode.` });
+      } else {
+        setLicenseNote({ tone: "failed", text: "We couldn't read the barcode. Retake the back in good light, or continue and type your details." });
+      }
+    }
+
+    if (key === "insuranceFront" || key === "insuranceBack") {
+      setCardNote({ tone: "pending", text: "Reading your insurance card…" });
+      setOcrPct(0);
+      try {
+        // OCR a sharper copy than the upload; small print needs the detail.
+        const text = await readCardText(await compressImage(file, 2000, 0.92), setOcrPct);
+        const g = parseInsuranceText(text, plans);
+        setForm((f) => {
+          const ins = { ...f.insurance };
+          if (g.memberId && !ins.memberId) ins.memberId = g.memberId;
+          if (g.groupNumber && !ins.groupNumber) ins.groupNumber = g.groupNumber;
+          if (!ins.plan && g.plan) ins.plan = g.plan;
+          else if (!ins.plan && g.payer) { ins.plan = OTHER_PLAN; ins.otherPlanName = g.payer; }
+          return { ...f, insurance: ins };
+        });
+        const found = [g.payer, g.memberId && `ID ${g.memberId}`].filter(Boolean).join(" · ");
+        setCardNote(found
+          ? { tone: "verified", text: `Found ${found}. You can check it on the next screen.` }
+          : { tone: "pending", text: "Card saved. We couldn't read the text clearly — you can type it on the next screen." });
+      } catch {
+        setCardNote({ tone: "pending", text: "Card saved. You can type your member ID on the next screen." });
+      } finally {
+        setOcrPct(null);
+      }
     }
   }
 
   function next(from: Step) {
     const f = form;
-    if (from === "phone") {
-      if (f.phone.replace(/\D/g, "").length !== 10) return setError("Enter your 10-digit mobile number.");
-      return go("identity");
-    }
-    if (from === "identity") {
-      if (!f.dob) return setError("Enter your date of birth.");
-      return go("license");
-    }
     if (from === "license") {
-      const l = f.license;
       if (!f.images.licenseFront) return setError("Take a photo of the front of your license.");
-      if (!l.firstName || !l.lastName || !l.number || !l.dob || !l.expiration || !l.street || !l.city || !l.zip)
-        return setError("Fill in all license details.");
+      if (!f.images.licenseBack) return setError("Take a photo of the back of your license — the barcode fills in your details.");
       return go("insurance");
     }
     if (from === "insurance") {
-      if (f.cashPay) return go("review");
-      if (!f.insurance.plan) return setError("Choose your insurance plan, or pick cash pay.");
-      if (f.insurance.plan === OTHER_PLAN) return setError("That plan isn't on our list. Choose cash pay, or tell the agent on the phone.");
-      if (!f.insurance.memberId) return setError("Enter your member ID.");
-      if (!f.images.insuranceFront) return setError("Take a photo of the front of your insurance card.");
-      return go("review");
+      if (!f.cashPay && !f.images.insuranceFront) return setError("Take a photo of the front of your insurance card, or choose cash pay.");
+      return go("confirm");
     }
   }
 
   async function submit() {
+    const l = form.license;
+    if (askPhone && form.phone.replace(/\D/g, "").length !== 10) return setError("Enter your 10-digit mobile number.");
+    if (!l.firstName || !l.lastName || !l.dob || !l.number || !l.expiration || !l.street || !l.city || !l.zip)
+      return setError("Please fill in all your details.");
+    if (!form.cashPay) {
+      if (!form.insurance.plan) return setError("Choose your insurance plan.");
+      if (!form.insurance.memberId) return setError("Enter your insurance member ID.");
+    }
+    if (!consent) return setError("Please tick the box to confirm your details are correct.");
     setBusy("submit");
     setError("");
     try {
       const res = await fetch("/api/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, dob: form.license.dob }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Something went wrong.");
@@ -128,248 +161,325 @@ export function Kiosk({ practice, plans, initialPhone }: { practice: string; pla
   }
 
   const stepIndex = FLOW.indexOf(step);
+  const back: Partial<Record<Step, Step>> = { insurance: "license", confirm: "insurance", byPhone: "license" };
   const planNotListed = form.insurance.plan === OTHER_PLAN;
 
   return (
-    <main className="shell">
-      <header className="brand">
-        <div className="logo" aria-hidden>+</div>
-        <div>
-          <div className="practice">{practice}</div>
-          <div className="sub">Patient verification</div>
-        </div>
-      </header>
+    <>
+      <TopNav tag="Patient Form" center={stepIndex >= 0 ? <Stepper steps={FLOW_LABELS} current={stepIndex} /> : undefined} />
 
-      {stepIndex >= 0 && (
-        <div className="progress" aria-label={`Step ${stepIndex + 1} of ${FLOW.length}`}>
-          {FLOW.map((s, i) => (
-            <span key={s} className={i <= stepIndex ? "on" : ""} />
-          ))}
-        </div>
-      )}
+      <main className="app-main">
+        <div className="app-stack">
+          {step === "license" && (
+            <>
+              <Header kicker="Step 1 of 3 · Fill out your details" title="Scan your driver's license"
+                sub="Take a photo of the front and back. We'll fill in your details for you." />
+              <CardArt kind="license" photo={form.images.licenseFront} />
+              <div className="capture-grid">
+                <Capture label="Front" hint="Photo side" value={form.images.licenseFront} busy={busy === "licenseFront"} onFile={(f) => onPhoto("licenseFront", f)} />
+                <Capture label="Back" hint="Barcode side" value={form.images.licenseBack} busy={busy === "licenseBack"} onFile={(f) => onPhoto("licenseBack", f)} />
+              </div>
+              {licenseNote && <Banner tone={licenseNote.tone}>{licenseNote.text}</Banner>}
+              <Tips items={["Lay the card flat on a dark surface", "Good light, no glare", "Fit the whole card in the photo"]} />
+              <button className="app-link" onClick={() => go("byPhone")}>I&apos;d rather do this over the phone</button>
+            </>
+          )}
 
-      <section className="card">
-        {step === "welcome" && (
-          <>
-            <h1>Let&apos;s verify your details</h1>
-            <p className="lead">
-              Takes about 2 minutes. You&apos;ll take a photo of your <b>California driver&apos;s license</b> and your{" "}
-              <b>insurance card</b>.
-            </p>
-            <p className="note">Please stay on the line with our agent while you do this.</p>
-            <button className="primary" onClick={() => go("phone")}>Start</button>
-            <button className="link" onClick={() => go("byPhone")}>I&apos;d rather do this over the phone</button>
-          </>
-        )}
-
-        {step === "byPhone" && (
-          <>
-            <h1>No problem</h1>
-            <p className="lead">
-              Let the agent on the phone know. They&apos;ll stay on the line and go through your details with you.
-            </p>
-            <p className="note">
-              You can also text a photo of your license and insurance card to the number that sent you this link.
-            </p>
-            <button className="secondary" onClick={() => go("welcome")}>Back</button>
-          </>
-        )}
-
-        {step === "phone" && (
-          <>
-            <h1>Confirm your phone number</h1>
-            <label>
-              Mobile number
-              <input
-                type="tel" inputMode="tel" autoComplete="tel" placeholder="(555) 555-5555"
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: formatPhone(e.target.value) })}
-              />
-            </label>
-            <Nav onNext={() => next("phone")} onBack={() => go("welcome")} />
-          </>
-        )}
-
-        {step === "identity" && (
-          <>
-            <h1>Verify your date of birth</h1>
-            <label>
-              Date of birth
-              <input
-                type="date" autoComplete="bday" max={new Date().toISOString().slice(0, 10)}
-                value={form.dob}
-                onChange={(e) => setForm({ ...form, dob: e.target.value })}
-              />
-            </label>
-            <p className="note">We&apos;ll match this against your driver&apos;s license.</p>
-            <Nav onNext={() => next("identity")} onBack={() => go("phone")} />
-          </>
-        )}
-
-        {step === "license" && (
-          <>
-            <h1>Driver&apos;s license</h1>
-            <p className="note">California driver&apos;s license or state ID. Lay it flat in good light.</p>
-            <div className="photos">
-              <Photo label="Front" value={form.images.licenseFront} busy={busy === "licenseFront"}
-                onFile={(f) => onPhoto("licenseFront", f)} />
-              <Photo label="Back (barcode)" value={form.images.licenseBack} busy={busy === "licenseBack"}
-                onFile={(f) => onPhoto("licenseBack", f)} />
-            </div>
-            {scanNote && <p className="scan">{scanNote}</p>}
-            <div className="grid2">
-              <Field label="First name" value={form.license.firstName} onChange={(v) => setLic({ firstName: v })} autoComplete="given-name" />
-              <Field label="Last name" value={form.license.lastName} onChange={(v) => setLic({ lastName: v })} autoComplete="family-name" />
-            </div>
-            <Field label="License number" value={form.license.number} placeholder="A1234567"
-              onChange={(v) => setLic({ number: v.toUpperCase().replace(/\s/g, "") })} />
-            <div className="grid2">
-              <Field label="Date of birth on license" type="date" value={form.license.dob} onChange={(v) => setLic({ dob: v })} />
-              <Field label="Expires" type="date" value={form.license.expiration} onChange={(v) => setLic({ expiration: v })} />
-            </div>
-            <Field label="Street address" value={form.license.street} onChange={(v) => setLic({ street: v })} autoComplete="address-line1" />
-            <div className="grid3">
-              <Field label="City" value={form.license.city} onChange={(v) => setLic({ city: v })} autoComplete="address-level2" />
-              <Field label="State" value={form.license.state} onChange={(v) => setLic({ state: v.toUpperCase().slice(0, 2) })} />
-              <Field label="ZIP" value={form.license.zip} inputMode="numeric"
-                onChange={(v) => setLic({ zip: v.replace(/[^\d-]/g, "").slice(0, 10) })} autoComplete="postal-code" />
-            </div>
-            <Nav onNext={() => next("license")} onBack={() => go("identity")} />
-          </>
-        )}
-
-        {step === "insurance" && (
-          <>
-            <h1>Insurance card</h1>
-            {!form.cashPay && (
-              <>
-                <label>
-                  Insurance plan
-                  <select value={form.insurance.plan} onChange={(e) => setIns({ plan: e.target.value })}>
-                    <option value="">Choose your plan…</option>
-                    {plans.map((p) => (
-                      <option key={p} value={p}>{p}</option>
-                    ))}
-                    <option value={OTHER_PLAN}>My plan isn&apos;t listed</option>
-                  </select>
-                </label>
-                {planNotListed && (
-                  <div className="warn">
-                    <p>We may not be in network with your plan.</p>
-                    <Field label="Your plan name" value={form.insurance.otherPlanName} onChange={(v) => setIns({ otherPlanName: v })} />
-                    <p>Would you like to book as <b>cash pay</b> instead? Or ask the agent on the phone.</p>
-                    <button className="secondary" onClick={() => setForm({ ...form, cashPay: true })}>Book as cash pay</button>
+          {step === "insurance" && (
+            <>
+              <Header kicker="Step 2 of 3" title="Scan your insurance card"
+                sub="Take a photo of the front and back. We'll read your plan and member ID." />
+              {form.cashPay ? (
+                <>
+                  <div className="notice notice--gold">
+                    <span className="icon"><Icon name="info" size={18} /></span>
+                    <div className="notice__text">You&apos;re booking as <b>self-pay</b>. The agent will go over pricing with you.</div>
                   </div>
-                )}
-                {!planNotListed && (
-                  <>
-                    <div className="photos">
-                      <Photo label="Front" value={form.images.insuranceFront} busy={busy === "insuranceFront"}
-                        onFile={(f) => onPhoto("insuranceFront", f)} />
-                      <Photo label="Back" value={form.images.insuranceBack} busy={busy === "insuranceBack"}
-                        onFile={(f) => onPhoto("insuranceBack", f)} />
+                  <button className="app-link" onClick={() => setForm({ ...form, cashPay: false })}>I have insurance — scan my card</button>
+                </>
+              ) : (
+                <>
+                  <CardArt kind="insurance" photo={form.images.insuranceFront} />
+                  <div className="capture-grid">
+                    <Capture label="Front" hint="Name & member ID" value={form.images.insuranceFront} busy={busy === "insuranceFront"} onFile={(f) => onPhoto("insuranceFront", f)} />
+                    <Capture label="Back" hint="Optional" value={form.images.insuranceBack} busy={busy === "insuranceBack"} onFile={(f) => onPhoto("insuranceBack", f)} />
+                  </div>
+                  {ocrPct !== null && (
+                    <div className="app-ocr">
+                      <div className="progress"><div className="progress__fill" style={{ width: `${Math.max(6, ocrPct)}%` }} /></div>
+                      <span className="t-label">Reading your card… {ocrPct}%</span>
                     </div>
-                    <div className="grid2">
-                      <Field label="Member ID" value={form.insurance.memberId} onChange={(v) => setIns({ memberId: v })} />
-                      <Field label="Group # (optional)" value={form.insurance.groupNumber} onChange={(v) => setIns({ groupNumber: v })} />
+                  )}
+                  {cardNote && ocrPct === null && <Banner tone={cardNote.tone}>{cardNote.text}</Banner>}
+                  <button className="app-link" onClick={() => setForm({ ...form, cashPay: true })}>I don&apos;t have insurance — I&apos;ll pay cash</button>
+                </>
+              )}
+            </>
+          )}
+
+          {step === "confirm" && (
+            <>
+              <Header kicker="Step 3 of 3" title="Are these details correct?"
+                sub="We filled these in from your license and insurance card. Fix anything that's wrong." />
+
+              <Section icon="user" title="Your details" auto={form.license.scanned}>
+                {askPhone && (
+                  <TextField label="Mobile number" type="tel" inputMode="tel" autoComplete="tel" value={form.phone}
+                    onChange={(v) => setForm({ ...form, phone: formatPhone(v) })} />
+                )}
+                <div className="app-grid2">
+                  <TextField label="First name" value={form.license.firstName} onChange={(v) => setLic({ firstName: v })} autoComplete="given-name" />
+                  <TextField label="Last name" value={form.license.lastName} onChange={(v) => setLic({ lastName: v })} autoComplete="family-name" />
+                </div>
+                <TextField label="Date of birth" type="date" value={form.license.dob} onChange={(v) => setLic({ dob: v })} />
+              </Section>
+
+              <Section icon="building" title="Home address" auto={form.license.scanned}>
+                <TextField label="Street address" value={form.license.street} onChange={(v) => setLic({ street: v })} autoComplete="address-line1" />
+                <div className="app-grid3">
+                  <TextField label="City" value={form.license.city} onChange={(v) => setLic({ city: v })} autoComplete="address-level2" />
+                  <TextField label="State" value={form.license.state} onChange={(v) => setLic({ state: v.toUpperCase().slice(0, 2) })} />
+                  <TextField label="ZIP" value={form.license.zip} inputMode="numeric" autoComplete="postal-code"
+                    onChange={(v) => setLic({ zip: v.replace(/[^\d-]/g, "").slice(0, 10) })} />
+                </div>
+              </Section>
+
+              <Section icon="card" title="Driver's license" auto={form.license.scanned}>
+                <div className="app-grid2">
+                  <TextField label="License number" value={form.license.number} placeholder="A1234567"
+                    onChange={(v) => setLic({ number: v.toUpperCase().replace(/\s/g, "") })} />
+                  <TextField label="Expires" type="date" value={form.license.expiration} onChange={(v) => setLic({ expiration: v })} />
+                </div>
+              </Section>
+
+              <Section icon="shield" title="Insurance" auto={!form.cashPay && Boolean(form.insurance.memberId && cardNote?.tone === "verified")}>
+                {form.cashPay ? (
+                  <div className="app-row">
+                    <span className="pill pill--gold">Self-pay</span>
+                    <button className="app-link" onClick={() => go("insurance")}>Use insurance instead</button>
+                  </div>
+                ) : (
+                  <>
+                    <Field label="Insurance plan">
+                      <Select value={form.insurance.plan} placeholder="Choose your plan…" onChange={(v) => setIns({ plan: v })}
+                        options={[...plans.map((p) => ({ value: p, label: p })), { value: OTHER_PLAN, label: "My plan isn't listed" }]} />
+                    </Field>
+                    {planNotListed && (
+                      <>
+                        <TextField label="Your plan name" value={form.insurance.otherPlanName} onChange={(v) => setIns({ otherPlanName: v })} />
+                        <div className="notice notice--gold">
+                          <span className="icon"><Icon name="info" size={18} /></span>
+                          <div className="notice__text">
+                            We may not be in network with this plan. You can book as <b>self-pay</b>, or ask the agent on the phone.
+                            <div style={{ marginTop: 10 }}>
+                              <button className="btn btn--secondary btn--sm" onClick={() => setForm({ ...form, cashPay: true })}>Book as cash pay</button>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                    <div className="app-grid2">
+                      <TextField label="Member ID" value={form.insurance.memberId} onChange={(v) => setIns({ memberId: v.toUpperCase() })} />
+                      <TextField label="Group number" hint="Optional" value={form.insurance.groupNumber} onChange={(v) => setIns({ groupNumber: v.toUpperCase() })} />
                     </div>
                   </>
                 )}
-                <button className="link" onClick={() => setForm({ ...form, cashPay: true })}>I don&apos;t have insurance / I&apos;ll pay cash</button>
-              </>
-            )}
-            {form.cashPay && (
-              <div className="warn">
-                <p><b>Cash pay selected.</b> The agent will go over pricing with you.</p>
-                <button className="link" onClick={() => setForm({ ...form, cashPay: false })}>Use insurance instead</button>
+              </Section>
+
+              <label className="opt-row app-consent">
+                <input className="check check--lg" type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
+                <span>These details are correct, and I agree to share them and my card photos with the office to verify my identity and insurance.</span>
+              </label>
+              <Hipaa />
+            </>
+          )}
+
+          {step === "byPhone" && (
+            <>
+              <Header title="No problem" sub="Let the agent on the phone know. They'll stay on the line and go through your details with you." />
+              <div className="notice notice--soft">
+                <span className="icon"><Icon name="info" size={18} color="#647689" /></span>
+                <div className="notice__text">You can also text a photo of your license and insurance card to the number that sent you this link.</div>
               </div>
+            </>
+          )}
+
+          {step === "done" && result && (
+            <>
+              <div className="ds-h is-center app-done">
+                {result.status === "needs_review" ? (
+                  <span className="icon-tile app-done__icon"><Icon name="phone" size={30} /></span>
+                ) : (
+                  <span className="success-badge"><Icon name="check" size={34} sw={3} /></span>
+                )}
+                <h1 className="step-header__title">{result.status === "needs_review" ? "Thanks — almost there" : "You're all set"}</h1>
+                <p className="step-header__sub">Read this code to the agent on the phone.</p>
+              </div>
+              <div className="card card--kiosk">
+                <div className="t-caps" style={{ textAlign: "center", marginBottom: 6 }}>Your code</div>
+                <div className="app-code">{result.code}</div>
+              </div>
+              {result.status === "needs_review" && (
+                <div className="list app-checks">
+                  {result.checks.filter((c) => !c.ok).map((c) => (
+                    <div key={c.id} className="list-row">
+                      <span className="app-check-icon is-bad"><Icon name="info" size={15} sw={2.4} /></span>
+                      <div className="list-row__main">
+                        <div className="list-row__title">{c.label}</div>
+                        {c.detail && <div className="list-row__meta">{c.detail}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="notice notice--soft">
+                <span className="icon"><Icon name="info" size={18} color="#647689" /></span>
+                <div className="notice__text">
+                  {result.status === "needs_review" ? "The agent will go over these with you. You can close this page." : "You can close this page now."}
+                </div>
+              </div>
+            </>
+          )}
+
+          {error && <Banner tone="failed">{error}</Banner>}
+        </div>
+      </main>
+
+      {step !== "done" && (
+        <div className="action-bar action-bar--blur app-bar">
+          <div className="app-bar__inner">
+            {back[step] && (
+              <button className="btn btn--secondary btn--lg btn--icon" aria-label="Back" onClick={() => go(back[step]!)}>
+                <Icon name="back" size={18} sw={2.2} />
+              </button>
             )}
-            <Nav onNext={() => next("insurance")} onBack={() => go("license")} />
-          </>
-        )}
-
-        {step === "review" && (
-          <>
-            <h1>Review</h1>
-            <dl className="review">
-              <dt>Phone</dt><dd>{form.phone}</dd>
-              <dt>Name</dt><dd>{form.license.firstName} {form.license.lastName}</dd>
-              <dt>Date of birth</dt><dd>{form.dob}</dd>
-              <dt>License</dt><dd>{form.license.number} ({form.license.state}), expires {form.license.expiration}</dd>
-              <dt>Address</dt><dd>{form.license.street}, {form.license.city}, {form.license.state} {form.license.zip}</dd>
-              <dt>Payment</dt>
-              <dd>{form.cashPay ? "Cash pay" : `${form.insurance.plan} · ID ${form.insurance.memberId}`}</dd>
-            </dl>
-            <p className="note">
-              By submitting, you agree to share these details and photos with {practice} to verify your identity and
-              insurance.
-            </p>
-            <Nav onNext={submit} nextLabel={busy === "submit" ? "Sending…" : "Submit"} disabled={busy === "submit"}
-              onBack={() => go("insurance")} />
-          </>
-        )}
-
-        {step === "done" && result && (
-          <>
-            <h1>{result.status === "needs_review" ? "Thanks — almost there" : "You're all set"}</h1>
-            <p className="lead">Read this code to the agent on the phone:</p>
-            <div className="code">{result.code}</div>
-            <ul className="checks">
-              {result.checks.map((c) => (
-                <li key={c.id} className={c.ok ? "ok" : "bad"}>
-                  <span aria-hidden>{c.ok ? "✓" : "!"}</span>
-                  <div>
-                    {c.label}
-                    {!c.ok && c.detail && <small>{c.detail}</small>}
-                  </div>
-                </li>
-              ))}
-            </ul>
-            {result.status === "needs_review" && (
-              <p className="note">The agent will go over anything marked with “!” with you.</p>
-            )}
-          </>
-        )}
-
-        {error && <p className="error" role="alert">{error}</p>}
-      </section>
-
-      <footer className="foot">Your information is sent securely and is only used by {practice}.</footer>
-    </main>
+            {step === "confirm" ? (
+              <button className="btn btn--cta app-cta" onClick={submit} disabled={busy === "submit"}>
+                {busy === "submit" ? "Sending…" : "Yes, submit"} <Icon name="check" size={16} sw={2.6} color="#fff" />
+              </button>
+            ) : step !== "byPhone" ? (
+              <button className="btn btn--cta app-cta" onClick={() => next(step)} disabled={busy !== "" || ocrPct !== null}>
+                {busy || ocrPct !== null ? "Please wait…" : "Next"} <Icon name="arrow" size={16} sw={2.4} color="#fff" />
+              </button>
+            ) : null}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
-function Nav({ onNext, onBack, nextLabel = "Next", disabled }: {
-  onNext: () => void; onBack?: () => void; nextLabel?: string; disabled?: boolean;
-}) {
+function Header({ kicker, title, sub }: { kicker?: string; title: string; sub?: string }) {
   return (
-    <div className="nav">
-      {onBack && <button className="secondary" onClick={onBack}>Back</button>}
-      <button className="primary" onClick={onNext} disabled={disabled}>{nextLabel}</button>
+    <div>
+      {kicker && <div className="step-header__kicker">{kicker}</div>}
+      <h1 className="step-header__title">{title}</h1>
+      {sub && <p className="step-header__sub">{sub}</p>}
     </div>
   );
 }
 
-function Field({ label, value, onChange, ...rest }: {
-  label: string; value: string; onChange: (v: string) => void;
-} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "value" | "onChange">) {
+// Illustration of the card to scan; shows the patient's photo once taken.
+function CardArt({ kind, photo }: { kind: "license" | "insurance"; photo?: string }) {
   return (
-    <label>
-      {label}
-      <input value={value} onChange={(e) => onChange(e.target.value)} {...rest} />
-    </label>
+    <div className={`app-cardart app-cardart--${kind} ${photo ? "has-photo" : ""}`} aria-hidden>
+      {photo ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={photo} alt="" />
+      ) : (
+        <>
+          <div className="app-cardart__top">{kind === "license" ? "CALIFORNIA · DRIVER LICENSE" : "HEALTH PLAN · MEMBER CARD"}</div>
+          {kind === "license" && <div className="app-cardart__face"><Icon name="user" size={34} sw={1.4} color="rgba(255,255,255,.85)" /></div>}
+          <div className="app-cardart__lines">
+            <span style={{ width: "62%" }} /><span style={{ width: "44%" }} /><span style={{ width: "54%" }} />
+          </div>
+          <div className="app-cardart__scan" />
+        </>
+      )}
+    </div>
   );
 }
 
-function Photo({ label, value, busy, onFile }: {
-  label: string; value?: string; busy: boolean; onFile: (f: File | undefined) => void;
+function Tips({ items }: { items: string[] }) {
+  return (
+    <ul className="app-tips">
+      {items.map((t) => (
+        <li key={t}><Icon name="check" size={14} sw={2.4} color="var(--primary)" /> {t}</li>
+      ))}
+    </ul>
+  );
+}
+
+function Section({ icon, title, auto, children }: { icon: IconName; title: string; auto?: boolean; children: ReactNode }) {
+  return (
+    <section className="card card--kiosk card--flush">
+      <div className="card__head">
+        <span className="icon-tile icon-tile--sm"><Icon name={icon} size={16} /></span>
+        <div className="card__title" style={{ flex: 1, fontSize: 15 }}>{title}</div>
+        {auto && <span className="pill pill--sm pill--green"><Icon name="check" size={11} sw={2.6} /> Auto-filled</span>}
+      </div>
+      <div className="card__body app-stack app-stack--tight">{children}</div>
+    </section>
+  );
+}
+
+function Hipaa() {
+  return (
+    <div className="hipaa-bar">
+      <span className="icon"><Icon name="lock" size={16} /></span>
+      <div className="hipaa-bar__text">Your information is encrypted and handled under HIPAA. It&apos;s only used to verify your identity and insurance.</div>
+    </div>
+  );
+}
+
+function Banner({ tone, children }: { tone: "verified" | "pending" | "failed"; children: ReactNode }) {
+  const icon: IconName = tone === "verified" ? "check" : tone === "failed" ? "close" : "info";
+  const badge = tone === "verified" ? undefined : tone === "failed" ? { background: "#F04438", color: "#fff" } : { background: "var(--line)", color: "var(--ink-3)" };
+  return (
+    <div className={`verify-banner verify-banner--${tone}`} role={tone === "failed" ? "alert" : "status"}>
+      <span className="verify-banner__badge" style={badge}><Icon name={icon} size={13} sw={3} /></span>
+      <span>{children}</span>
+    </div>
+  );
+}
+
+function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+  return (
+    <div className="field">
+      <label className="field__label">{label}</label>
+      {children}
+      {hint && <span className="field__hint">{hint}</span>}
+    </div>
+  );
+}
+
+function TextField({ label, value, onChange, hint, ...rest }: {
+  label: string; value: string; onChange: (v: string) => void; hint?: string;
+} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "value" | "onChange">) {
+  return (
+    <Field label={label} hint={hint}>
+      <div className="input input--kiosk">
+        <input value={value} onChange={(e) => onChange(e.target.value)} {...rest} />
+      </div>
+    </Field>
+  );
+}
+
+// Design-system capture tile: dashed → loading → captured (solid green).
+function Capture({ label, hint, value, busy, onFile }: {
+  label: string; hint: string; value?: string; busy: boolean; onFile: (f: File | undefined) => void;
 }) {
   return (
-    <label className={`photo ${value ? "has" : ""}`}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      {value ? <img src={value} alt={label} /> : <span className="cam" aria-hidden>📷</span>}
-      <span>{busy ? "Loading…" : value ? `${label} · retake` : `${label}`}</span>
-      <input type="file" accept="image/*" capture="environment" hidden
+    <label className={`capture-tile ${value ? "is-done" : ""}`}>
+      <span className="capture-tile__corner">{label}</span>
+      {busy ? (
+        <span className="spinner" />
+      ) : (
+        <span className="capture-tile__icon"><Icon name={value ? "check" : "camera"} size={18} sw={value ? 2.4 : 1.6} /></span>
+      )}
+      <span className="capture-tile__text">{busy ? "Loading…" : value ? "Captured · retake" : `Scan ${label.toLowerCase()}`}</span>
+      {!value && !busy && <span className="app-capture-hint">{hint}</span>}
+      <input type="file" accept="image/*" capture="environment"
         onChange={(e) => { onFile(e.target.files?.[0]); e.target.value = ""; }} />
     </label>
   );

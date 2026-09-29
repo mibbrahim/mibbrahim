@@ -1,0 +1,169 @@
+/* Vendored verbatim from https://design-components-ks.netlify.app/tokens.css — do not edit; update by re-downloading. */
+/* ============================================================================
+   PracticeEHR · Self Check-In Kiosk + Self-Scheduling — DESIGN TOKENS
+   ----------------------------------------------------------------------------
+   Single source of truth, extracted verbatim from the prototype design system
+   (shared.jsx — identical across the Kiosk and Self-Scheduling builds).
+
+   Everything downstream (components.css) is built on these variables, so a
+   theme change is a one-line edit here. Import this file FIRST.
+   ============================================================================ */
+
+:root {
+  /* ── Ink / text scale ─────────────────────────────────────────────────── */
+  --ink:            #0E1A24;   /* primary text, darkest                       */
+  --ink-2:          #33485A;   /* body text                                   */
+  --ink-3:          #647689;   /* secondary / subtitle text                   */
+  --ink-4:          #9AA9B7;   /* muted labels, placeholders, disabled text   */
+
+  /* ── Lines / dividers ─────────────────────────────────────────────────── */
+  --line:           #E4E9EE;   /* standard hairline border                    */
+  --line-2:         #EFF3F6;   /* lighter divider / card border               */
+  --line-dash:      #C5D4E8;   /* dashed capture-tile border (kiosk one-off)  */
+
+  /* ── Surfaces ─────────────────────────────────────────────────────────── */
+  --bg:             #FFFFFF;   /* app background (white)                      */
+  --surface:        #FFFFFF;   /* cards, header, footer                       */
+  --surface-alt:    #F6F8FB;   /* soft fills, hover backgrounds               */
+  --inset:          #F4F7FB;   /* kiosk input fills, soft chips               */
+  --canvas:         #F3F7FB;   /* behind-app canvas (kiosk root paints white) */
+
+  /* ── Primary — healthcare blue ────────────────────────────────────────── */
+  --primary:        #2563EB;
+  --primary-deep:   #1D4ED8;   /* gradient end / hover                        */
+  --primary-soft:   #E6EDFD;   /* soft blue fill (scheduling)                 */
+  --primary-soft-2: #EBF2FF;   /* soft blue fill (kiosk)                      */
+  --primary-grad:   linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+
+  /* ── Semantic — success ───────────────────────────────────────────────── */
+  --green:          #3F8F5C;   /* scheduling success                          */
+  --green-soft:     #E5F1E9;
+  --success:        #16A34A;   /* kiosk success (stronger)                    */
+  --success-soft:   #DCFCE7;
+
+  /* ── Semantic — danger / required ─────────────────────────────────────── */
+  --rose:           #C75450;   /* scheduling danger                           */
+  --rose-soft:      #FBE9E7;
+  --danger:         #DC2626;   /* kiosk required / error (stronger)           */
+  --danger-soft:    #FEE2E2;
+
+  /* ── Semantic — warning ───────────────────────────────────────────────── */
+  --amber:          #D97706;
+  --amber-soft:     #FEF3C7;
+
+  /* ── Accent — gold (cancellation / self-pay notices only) ─────────────── */
+  --gold:           #E8B14A;
+  --gold-ink:       #8B6A1F;
+  --gold-ink-deep:  #5C4818;
+  --gold-soft:      rgba(232, 177, 74, .12);
+  --gold-border:    rgba(232, 177, 74, .30);
+
+  /* ── AI accent — iridescent violet → teal (always means "AI did this") ── */
+  --ai-a:           #6E5BFF;   /* violet                                      */
+  --ai-b:           #0E7C7B;   /* teal                                        */
+  --ai-gold:        #E8B14A;   /* third orb stop                              */
+  --ai-ink:         #3B2FA8;   /* AI text on soft backgrounds                 */
+  --ai-soft:        #EEEAFF;   /* AI chip fill                                */
+  --ai-grad:        linear-gradient(135deg, #6E5BFF 0%, #0E7C7B 100%);
+  --ai-soft-grad:   linear-gradient(135deg, #EEEAFF 0%, #E6F2F1 100%);
+  --ai-orb-grad:    conic-gradient(from 0deg, #6E5BFF, #0E7C7B, #E8B14A, #6E5BFF);
+  --ai-tint:        linear-gradient(135deg, rgba(110,91,255,.06), rgba(14,124,123,.06));
+  --ai-ring:        rgba(110, 91, 255, .18);
+
+  /* ── Typography ───────────────────────────────────────────────────────── */
+  --font-sans:  "Inter Tight", "InterTight", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-serif: "Source Serif 4", "Source Serif Pro", Georgia, serif;
+  --font-mono:  "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Inter Tight ships a real 540 weight — used for control labels & AI FAB. */
+  --fw-regular:  400;
+  --fw-medium:   500;
+  --fw-label:    540;   /* the signature in-between weight                    */
+  --fw-semibold: 600;
+  --fw-bold:     700;
+  --fw-heavy:    800;   /* kiosk eyebrow caps                                 */
+
+  /* Display type scale (serif H1s sit at 30–56) ------------------------------ */
+  --type-display:  3.5rem;   /* 56px — hero                                    */
+  --type-h1:       2rem;     /* 32px — page title                             */
+  --type-h2:       1.375rem; /* 22px — section title                          */
+  --type-h3:       1.0625rem;/* 17px                                          */
+  --type-lg:       0.96875rem;/*15.5px — lead body                            */
+  --type-base:     0.875rem; /* 14px — body / UI                              */
+  --type-sm:       0.8125rem;/* 13px                                          */
+  --type-xs:       0.75rem;  /* 12px — labels                                 */
+  --type-2xs:      0.65625rem;/*10.5px — eyebrows / caps                      */
+
+  --tracking-tight:  -0.02em; /* serif headings                               */
+  --tracking-snug:   -0.01em;
+  --tracking-label:  -0.005em;/* UI text                                      */
+  --tracking-caps:   0.08em;  /* uppercase eyebrows                           */
+
+  /* ── Spacing scale (4px base) ─────────────────────────────────────────── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-7:  28px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ── Radii ────────────────────────────────────────────────────────────── */
+  --r-xs:   6px;
+  --r-sm:   8px;
+  --r-md:   10px;
+  --r-lg:   12px;
+  --r-xl:   14px;   /* default card radius                                    */
+  --r-2xl:  16px;
+  --r-3xl:  18px;
+  --r-pill: 999px;
+
+  /* ── Elevation ────────────────────────────────────────────────────────── */
+  --shadow-soft:  0 1px 2px rgba(14,26,36,.04), 0 6px 18px rgba(14,26,36,.06);
+  --shadow-md:    0 2px 6px rgba(14,26,36,.06), 0 18px 40px rgba(14,26,36,.10);
+  --shadow-lg:    0 4px 12px rgba(14,26,36,.08), 0 32px 60px rgba(14,26,36,.16);
+  --shadow-kiosk: 0 1px 3px rgba(14,26,36,.04), 0 4px 16px rgba(14,26,36,.07);
+  --shadow-cta:   0 4px 16px rgba(37,99,235,.25);   /* blue CTA glow          */
+  --shadow-ai:    0 6px 20px rgba(110,91,255,.35);  /* AI FAB glow            */
+
+  /* ── Focus ring ───────────────────────────────────────────────────────── */
+  --ring-focus:   inset 0 0 0 2px var(--primary);
+  --ring-hairline:inset 0 0 0 1px var(--line);
+
+  /* ── Motion ───────────────────────────────────────────────────────────── */
+  --ease-out:  cubic-bezier(.3, .7, .4, 1);   /* springy settle               */
+  --ease-soft: cubic-bezier(.2, .7, .3, 1);
+  --dur-fast:  .12s;
+  --dur:       .15s;
+  --dur-mid:   .2s;
+  --dur-slow:  .4s;
+}
+
+/* ── Keyframes (referenced by components.css) ───────────────────────────── */
+@keyframes aiSpin       { to   { transform: rotate(360deg); } }
+@keyframes spin         { to   { transform: rotate(360deg); } }
+@keyframes aiPulse      { 0%,100% { opacity: .25 } 50% { opacity: 1 } }
+/* AI orb (logo) — self-drawing iridescent ring + breathing core */
+@keyframes aiBreathe    { 0%,100% { transform: scale(.82); opacity: .45 } 50% { transform: scale(1.12); opacity: .92 } }
+@keyframes aiDraw       { 0% { stroke-dashoffset: 150 } 100% { stroke-dashoffset: 0 } }
+@keyframes fadeUp       { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes fadeIn       { from { opacity: 0 } to { opacity: 1 } }
+@keyframes shimmer      { to   { background-position: 200% center; } }
+@keyframes confirmBounce{ 0% { opacity: 0; transform: scale(.5) } 60% { transform: scale(1.18) } 100% { opacity: 1; transform: scale(1) } }
+
+/* Utility animation classes (used verbatim in the prototypes) */
+.fadeUp { animation: fadeUp .35s var(--ease-soft) both; }
+.fadeIn { animation: fadeIn .25s ease both; }
+.shimmer {
+  background: linear-gradient(90deg,#EEEAFF 0%, #E6F2F1 25%, #EEEAFF 50%, #E6F2F1 75%, #EEEAFF 100%);
+  background-size: 200% 100%;
+  animation: shimmer 3.5s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+}
