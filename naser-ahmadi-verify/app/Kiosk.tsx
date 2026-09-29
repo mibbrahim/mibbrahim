@@ -2,6 +2,7 @@
 
 import { useCallback, useState, type ReactNode } from "react";
 import { CameraScanner, type ScanSide } from "@/components/CameraScanner";
+import { DatePicker } from "@/components/DatePicker";
 import { Icon, type IconName } from "@/components/Icon";
 import { Select } from "@/components/Select";
 import { Stepper, TopNav } from "@/components/TopNav";
@@ -28,6 +29,8 @@ const INSURANCE_SIDES: ScanSide[] = [
   { key: "insuranceFront", label: "Front", hint: "Fit the front of your card inside the frame, then tap the button" },
   { key: "insuranceBack", label: "Back", hint: "Now the back of your card (optional)" },
 ];
+
+const todayIso = () => new Date().toISOString().slice(0, 10);
 
 function formatPhone(s: string): string {
   let d = s.replace(/\D/g, "");
@@ -349,7 +352,10 @@ export function Kiosk({ plans, initialPhone, demo }: { plans: string[]; initialP
                   <TextField label="First name" value={form.license.firstName} onChange={(v) => setLic({ firstName: v })} autoComplete="given-name" />
                   <TextField label="Last name" value={form.license.lastName} onChange={(v) => setLic({ lastName: v })} autoComplete="family-name" />
                 </div>
-                <TextField label="Date of birth" type="date" value={form.license.dob} onChange={(v) => setLic({ dob: v })} />
+                <Field label="Date of birth">
+                  <DatePicker value={form.license.dob} onChange={(v) => setLic({ dob: v })} placeholder="Select your date of birth"
+                    min="1900-01-01" max={todayIso()} startYear={new Date().getFullYear() - 35} />
+                </Field>
               </Section>
 
               <Section icon="building" title="Home address" auto={form.license.scanned} sample={demoSections.has("address")}>
@@ -363,11 +369,11 @@ export function Kiosk({ plans, initialPhone, demo }: { plans: string[]; initialP
               </Section>
 
               <Section icon="card" title="Driver's license" auto={form.license.scanned} sample={demoSections.has("license")}>
-                <div className="app-grid2">
-                  <TextField label="License number" value={form.license.number} placeholder="A1234567"
-                    onChange={(v) => setLic({ number: v.toUpperCase().replace(/\s/g, "") })} />
-                  <TextField label="Expires" type="date" value={form.license.expiration} onChange={(v) => setLic({ expiration: v })} />
-                </div>
+                <TextField label="License number" value={form.license.number} placeholder="A1234567"
+                  onChange={(v) => setLic({ number: v.toUpperCase().replace(/\s/g, "") })} />
+                <Field label="Expires">
+                  <DatePicker value={form.license.expiration} onChange={(v) => setLic({ expiration: v })} placeholder="Expiry date" />
+                </Field>
               </Section>
 
               <Section icon="shield" title="Insurance" auto={!form.cashPay && Boolean(form.insurance.memberId && cardNote?.tone === "verified")} sample={!form.cashPay && demoSections.has("insurance")}>

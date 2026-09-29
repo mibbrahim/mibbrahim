@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./ds/tokens.css";
 import "./ds/components.css";
+import "./ds/datepicker.css";
 import "./app.css";
 
 export const metadata: Metadata = {
