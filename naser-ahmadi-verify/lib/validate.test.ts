@@ -104,3 +104,19 @@ test("falls back to an ID-shaped token", () => {
   assert.equal(g.groupNumber, "5X001");
   assert.equal(g.plan, "Blue Shield of California PPO");
 });
+
+import { parseLicenseText } from "./license.ts";
+
+test("reads the front of a California license", () => {
+  const text = `California USA DRIVER LICENSE\nDL D1234567\nEXP 04/12/2029\nLN DOE\nFN JANE MARIE\n123 MAIN ST\nLOS ANGELES, CA 90012\nDOB 04/12/1985\nSEX F HAIR BRN EYES BRO`;
+  assert.deepEqual(parseLicenseText(text), {
+    licenseNumber: "D1234567", expiration: "2029-04-12", dob: "1985-04-12", lastName: "Doe", firstName: "Jane",
+    city: "Los Angeles", state: "CA", zip: "90012", street: "123 Main St",
+  });
+});
+
+test("license front parsing tolerates missing fields", () => {
+  const d = parseLicenseText("noise\nD7654321\nnothing else");
+  assert.equal(d.licenseNumber, "D7654321");
+  assert.equal(d.dob, undefined);
+});

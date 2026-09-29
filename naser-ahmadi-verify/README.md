@@ -32,6 +32,7 @@ Status is **Verified**, **Needs review** (the agent goes over anything marked `!
 | `AGENT_PIN` | PIN agents type on `/agent`. Required. |
 | `KV_REST_API_URL` / `KV_REST_API_TOKEN` | Storage. Add **Upstash Redis** from Vercel → Storage / Marketplace and connect it to the project; these are set automatically. Without it, submissions won't reliably reach `/agent` on Vercel. |
 | `RETENTION_DAYS` | Days to keep submissions and photos (default 30). |
+| `DEMO_AUTOFILL` | **Prototype.** Fills any field the scans could not read with sample data, labelled "Sample data". On unless set to `false` — turn it off before real patients use the form. |
 
 ## Deploy
 

@@ -7,7 +7,9 @@ import { Select } from "@/components/Select";
 import { Stepper, TopNav } from "@/components/TopNav";
 import { isAamva, parseAamva } from "@/lib/aamva";
 import { compressImage, readCardText, readLicenseBarcode } from "@/lib/image";
+import { DEMO_LICENSE, demoInsurance } from "@/lib/demo";
 import { parseInsuranceText } from "@/lib/insurance";
+import { parseLicenseText } from "@/lib/license";
 import { OTHER_PLAN, type Check, type IntakeForm } from "@/lib/types";
 
 type Step = "license" | "insurance" | "confirm" | "done" | "byPhone";
@@ -48,7 +50,7 @@ const emptyForm = (phone: string): IntakeForm => ({
   images: {},
 });
 
-export function Kiosk({ plans, initialPhone }: { plans: string[]; initialPhone: string }) {
+export function Kiosk({ plans, initialPhone, demo }: { plans: string[]; initialPhone: string; demo: boolean }) {
   // The phone number comes from the texted link; only ask for it if it's missing.
   const [askPhone] = useState(() => initialPhone.replace(/\D/g, "").length < 10);
   const [step, setStep] = useState<Step>("license");
@@ -63,6 +65,7 @@ export function Kiosk({ plans, initialPhone }: { plans: string[]; initialPhone: 
   // Live camera unless it can't be opened, then fall back to the phone's photo picker.
   const [camError, setCamError] = useState<string | null>(null);
   const [retake, setRetake] = useState<ImageKey | null>(null);
+  const [demoSections, setDemoSections] = useState<Set<string>>(new Set());
 
   const setLic = (patch: Partial<IntakeForm["license"]>) =>
     setForm((f) => ({ ...f, license: { ...f.license, ...patch } }));
@@ -104,6 +107,24 @@ export function Kiosk({ plans, initialPhone }: { plans: string[]; initialPhone: 
     }
     setBusy("");
 
+    if (key === "licenseFront") {
+      // Read the printed text too, in the background. It only fills fields the
+      // barcode (more reliable) hasn't, so the order these finish in doesn't matter.
+      readCardText(await compressImage(file, 2000, 0.92))
+        .then((text) => {
+          const { licenseNumber, ...rest } = parseLicenseText(text);
+          setForm((f) => {
+            const lic = { ...f.license };
+            for (const [k, v] of Object.entries({ ...rest, number: licenseNumber })) {
+              const field = k as keyof Omit<IntakeForm["license"], "scanned">;
+              if (v && (!lic[field] || (field === "state" && !lic.scanned))) lic[field] = v;
+            }
+            return { ...f, license: lic };
+          });
+        })
+        .catch(() => {});
+    }
+
     if (key === "licenseBack") {
       setLicenseNote({ tone: "pending", text: "Reading the barcode on your license…" });
       const text = detected ?? (await readLicenseBarcode(file).catch(() => null));
@@ -115,7 +136,7 @@ export function Kiosk({ plans, initialPhone }: { plans: string[]; initialPhone: 
         setLic({ ...patch, scanned: true });
         setLicenseNote({ tone: "verified", text: `Got it${patch.firstName ? `, ${patch.firstName}` : ""}! We read your details from the barcode.` });
       } else {
-        setLicenseNote({ tone: "failed", text: "We couldn't read the barcode. Retake the back in good light, or continue and type your details." });
+        setLicenseNote({ tone: "pending", text: "We couldn't read the barcode, so we'll use the front of your license. You can check everything on the last screen." });
       }
     }
 
@@ -146,6 +167,30 @@ export function Kiosk({ plans, initialPhone }: { plans: string[]; initialPhone: 
     }
   }
 
+  // PROTOTYPE: fill anything the scans couldn't read with sample data, and
+  // remember which sections got it so they're labelled "Sample data".
+  function fillDemo() {
+    const groups: [string, (keyof typeof DEMO_LICENSE)[]][] = [
+      ["you", ["firstName", "lastName", "dob"]],
+      ["address", ["street", "city", "state", "zip"]],
+      ["license", ["number", "expiration"]],
+    ];
+    const d = demoInsurance(plans);
+    const insKeys = ["plan", "memberId", "groupNumber"] as const;
+    const sections = new Set<string>();
+    for (const [section, keys] of groups) if (keys.some((k) => !form.license[k])) sections.add(section);
+    if (!form.cashPay && insKeys.some((k) => !form.insurance[k])) sections.add("insurance");
+    setDemoSections(sections);
+    // Functional update: only empty fields, so a scan finishing now isn't overwritten.
+    setForm((f) => {
+      const lic = { ...f.license };
+      for (const [, keys] of groups) for (const k of keys) if (!lic[k]) lic[k] = DEMO_LICENSE[k];
+      const ins = { ...f.insurance };
+      if (!f.cashPay) for (const k of insKeys) if (!ins[k]) ins[k] = d[k];
+      return { ...f, license: lic, insurance: ins };
+    });
+  }
+
   function next(from: Step) {
     const f = form;
     if (from === "license") {
@@ -155,6 +200,7 @@ export function Kiosk({ plans, initialPhone }: { plans: string[]; initialPhone: 
     }
     if (from === "insurance") {
       if (!f.cashPay && !f.images.insuranceFront) return setError("Take a photo of the front of your insurance card, or choose cash pay.");
+      if (demo) fillDemo();
       return go("confirm");
     }
   }
@@ -293,7 +339,7 @@ export function Kiosk({ plans, initialPhone }: { plans: string[]; initialPhone: 
               <Header kicker="Step 3 of 3" title="Are these details correct?"
                 sub="We filled these in from your license and insurance card. Fix anything that's wrong." />
 
-              <Section icon="user" title="Your details" auto={form.license.scanned}>
+              <Section icon="user" title="Your details" auto={form.license.scanned} sample={demoSections.has("you")}>
                 {askPhone && (
                   <TextField label="Mobile number" type="tel" inputMode="tel" autoComplete="tel" value={form.phone}
                     onChange={(v) => setForm({ ...form, phone: formatPhone(v) })} />
@@ -305,7 +351,7 @@ export function Kiosk({ plans, initialPhone }: { plans: string[]; initialPhone: 
                 <TextField label="Date of birth" type="date" value={form.license.dob} onChange={(v) => setLic({ dob: v })} />
               </Section>
 
-              <Section icon="building" title="Home address" auto={form.license.scanned}>
+              <Section icon="building" title="Home address" auto={form.license.scanned} sample={demoSections.has("address")}>
                 <TextField label="Street address" value={form.license.street} onChange={(v) => setLic({ street: v })} autoComplete="address-line1" />
                 <div className="app-grid3">
                   <TextField label="City" value={form.license.city} onChange={(v) => setLic({ city: v })} autoComplete="address-level2" />
@@ -315,7 +361,7 @@ export function Kiosk({ plans, initialPhone }: { plans: string[]; initialPhone: 
                 </div>
               </Section>
 
-              <Section icon="card" title="Driver's license" auto={form.license.scanned}>
+              <Section icon="card" title="Driver's license" auto={form.license.scanned} sample={demoSections.has("license")}>
                 <div className="app-grid2">
                   <TextField label="License number" value={form.license.number} placeholder="A1234567"
                     onChange={(v) => setLic({ number: v.toUpperCase().replace(/\s/g, "") })} />
@@ -323,7 +369,7 @@ export function Kiosk({ plans, initialPhone }: { plans: string[]; initialPhone: 
                 </div>
               </Section>
 
-              <Section icon="shield" title="Insurance" auto={!form.cashPay && Boolean(form.insurance.memberId && cardNote?.tone === "verified")}>
+              <Section icon="shield" title="Insurance" auto={!form.cashPay && Boolean(form.insurance.memberId && cardNote?.tone === "verified")} sample={!form.cashPay && demoSections.has("insurance")}>
                 {form.cashPay ? (
                   <div className="app-row">
                     <span className="pill pill--gold">Self-pay</span>
@@ -481,13 +527,19 @@ function Tips({ items }: { items: string[] }) {
   );
 }
 
-function Section({ icon, title, auto, children }: { icon: IconName; title: string; auto?: boolean; children: ReactNode }) {
+function Section({ icon, title, auto, sample, children }: {
+  icon: IconName; title: string; auto?: boolean; sample?: boolean; children: ReactNode;
+}) {
   return (
     <section className="card card--kiosk card--flush">
       <div className="card__head">
         <span className="icon-tile icon-tile--sm"><Icon name={icon} size={16} /></span>
         <div className="card__title" style={{ flex: 1, fontSize: 15 }}>{title}</div>
-        {auto && <span className="pill pill--sm pill--green"><Icon name="check" size={11} sw={2.6} /> Auto-filled</span>}
+        {sample ? (
+          <span className="pill pill--sm pill--blue" title="Prototype: sample values where the scan couldn't read your card">Sample data</span>
+        ) : auto ? (
+          <span className="pill pill--sm pill--green"><Icon name="check" size={11} sw={2.6} /> Auto-filled</span>
+        ) : null}
       </div>
       <div className="card__body app-stack app-stack--tight">{children}</div>
     </section>
