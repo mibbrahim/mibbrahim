@@ -7,5 +7,8 @@ export const dynamic = "force-dynamic";
 // patient never has to type their number.
 export default async function Page({ searchParams }: { searchParams: Promise<{ phone?: string }> }) {
   const { phone } = await searchParams;
-  return <Kiosk plans={acceptedPlans()} initialPhone={phone ?? ""} />;
+  // Prototype: fill anything the scans can't read with sample data. Set
+  // DEMO_AUTOFILL=false before real patients use the form.
+  const demo = process.env.DEMO_AUTOFILL !== "false";
+  return <Kiosk plans={acceptedPlans()} initialPhone={phone ?? ""} demo={demo} />;
 }
