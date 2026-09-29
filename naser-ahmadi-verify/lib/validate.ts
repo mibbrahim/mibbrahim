@@ -83,12 +83,9 @@ export function runChecks(form: IntakeForm, accepted: string[], today = new Date
             ? "Street or city missing"
             : undefined,
     },
-    {
-      id: "license_photo",
-      label: "License photo uploaded",
-      ok: Boolean(form.images.licenseFront),
-    },
   ];
+  // Typed-in entries have no photos by design; the agent sees them flagged instead.
+  if (!form.manual) checks.push({ id: "license_photo", label: "License photo uploaded", ok: Boolean(form.images.licenseFront) });
 
   if (!form.cashPay) {
     checks.push(
@@ -103,12 +100,8 @@ export function runChecks(form: IntakeForm, accepted: string[], today = new Date
         label: "Insurance member ID",
         ok: form.insurance.memberId.trim().length >= 3,
       },
-      {
-        id: "insurance_photo",
-        label: "Insurance card photo uploaded",
-        ok: Boolean(form.images.insuranceFront),
-      },
     );
+    if (!form.manual) checks.push({ id: "insurance_photo", label: "Insurance card photo uploaded", ok: Boolean(form.images.insuranceFront) });
   }
 
   return checks;

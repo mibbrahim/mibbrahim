@@ -146,7 +146,7 @@ export default function AgentPage() {
               <span className="avatar">{(f.license.firstName[0] ?? "") + (f.license.lastName[0] ?? "")}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="card__title">{f.license.firstName} {f.license.lastName}</div>
-                <div className="card__sub">Code <span className="t-mono">{s.code}</span> · {new Date(s.createdAt).toLocaleString()}</div>
+                <div className="card__sub">Code <span className="t-mono">{s.code}</span> · {new Date(s.createdAt).toLocaleString()}{f.manual && <> · <b>Typed in by patient, no photos</b></>}</div>
               </div>
               <StatusChip status={s.status} />
             </div>

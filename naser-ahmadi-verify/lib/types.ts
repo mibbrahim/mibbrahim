@@ -20,6 +20,7 @@ export type IntakeForm = {
     groupNumber: string;
   };
   cashPay: boolean;
+  manual?: boolean; // typed in by the patient ("Type it in myself"), no card photos
   images: {
     licenseFront?: string; // data URL (JPEG)
     licenseBack?: string;

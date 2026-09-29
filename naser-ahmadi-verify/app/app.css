@@ -122,8 +122,6 @@ input, select, textarea { font-size: 16px !important; } /* stops iOS zooming int
 .app-ocr { display: flex; flex-direction: column; gap: 8px; }
 .app-ocr .progress { max-width: none; }
 
-.app-consent { align-items: flex-start; font-size: 13.5px; line-height: 1.45; }
-.app-consent .check { margin-top: 2px; flex-shrink: 0; }
 
 /* Bottom bar */
 .app-bar { position: sticky; bottom: 0; z-index: 10; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)) !important; }
@@ -188,3 +186,7 @@ input, select, textarea { font-size: 16px !important; } /* stops iOS zooming int
 .app-cal__title:disabled { cursor: default; color: var(--ink); }
 .app-cal__wide { grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 4px; }
 .app-cal__wide .cal__day { height: 48px; }
+@media (max-width: 400px) {
+  .app-topnav .topnav__right { display: none; } /* room for the 4-step progress */
+  .app-topnav .stepper__circle { width: 20px; height: 20px; }
+}

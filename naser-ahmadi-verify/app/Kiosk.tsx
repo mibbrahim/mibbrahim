@@ -2,7 +2,7 @@
 
 import { useCallback, useState, type ReactNode } from "react";
 import { CameraScanner, type ScanSide } from "@/components/CameraScanner";
-import { DatePicker } from "@/components/DatePicker";
+import { DatePicker, formatDate } from "@/components/DatePicker";
 import { Icon, type IconName } from "@/components/Icon";
 import { Select } from "@/components/Select";
 import { Stepper, TopNav } from "@/components/TopNav";
@@ -13,9 +13,9 @@ import { parseInsuranceText } from "@/lib/insurance";
 import { parseLicenseText } from "@/lib/license";
 import { OTHER_PLAN, type Check, type IntakeForm } from "@/lib/types";
 
-type Step = "license" | "insurance" | "confirm" | "done" | "byPhone";
-const FLOW: Step[] = ["license", "insurance", "confirm"];
-const FLOW_LABELS = ["License", "Insurance", "Confirm"];
+type Step = "dob" | "license" | "insurance" | "confirm" | "done" | "byPhone";
+const FLOW: Step[] = ["dob", "license", "insurance", "confirm"];
+const FLOW_LABELS = ["Birthday", "License", "Insurance", "Confirm"];
 
 type Result = { code: string; status: "verified" | "needs_review" | "cash_pay"; checks: Check[] };
 type Notice = { tone: "verified" | "pending" | "failed"; text: string } | null;
@@ -56,9 +56,8 @@ const emptyForm = (phone: string): IntakeForm => ({
 export function Kiosk({ plans, initialPhone, demo }: { plans: string[]; initialPhone: string; demo: boolean }) {
   // The phone number comes from the texted link; only ask for it if it's missing.
   const [phoneFromLink] = useState(() => formatPhone(initialPhone).replace(/\D/g, "").length === 10);
-  const [step, setStep] = useState<Step>("license");
+  const [step, setStep] = useState<Step>("dob");
   const [form, setForm] = useState<IntakeForm>(() => emptyForm(initialPhone));
-  const [consent, setConsent] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState<ImageKey | "submit" | "">("");
   const [licenseNote, setLicenseNote] = useState<Notice>(null);
@@ -69,6 +68,9 @@ export function Kiosk({ plans, initialPhone, demo }: { plans: string[]; initialP
   const [camError, setCamError] = useState<string | null>(null);
   const [retake, setRetake] = useState<ImageKey | null>(null);
   const [demoSections, setDemoSections] = useState<Set<string>>(new Set());
+  // "Type it in myself": skip the scans and fill the form by hand (no sample data).
+  const [manual, setManual] = useState(false);
+  const [toldAgent, setToldAgent] = useState(false);
 
   const setLic = (patch: Partial<IntakeForm["license"]>) =>
     setForm((f) => ({ ...f, license: { ...f.license, ...patch } }));
@@ -189,7 +191,7 @@ export function Kiosk({ plans, initialPhone, demo }: { plans: string[]; initialP
     // Functional update: only empty fields, so a scan finishing now isn't overwritten.
     setForm((f) => {
       const lic = { ...f.license };
-      for (const [, keys] of groups) for (const k of keys) if (!lic[k]) lic[k] = DEMO_LICENSE[k];
+      for (const [, keys] of groups) for (const k of keys) if (!lic[k]) lic[k] = k === "dob" && f.dob ? f.dob : DEMO_LICENSE[k];
       const ins = { ...f.insurance };
       if (!f.cashPay) for (const k of insKeys) if (!ins[k]) ins[k] = d[k];
       return { ...f, license: lic, insurance: ins, phone: noPhone ? formatPhone(DEMO_PHONE) : f.phone };
@@ -198,9 +200,14 @@ export function Kiosk({ plans, initialPhone, demo }: { plans: string[]; initialP
 
   function next(from: Step) {
     const f = form;
+    if (from === "dob") {
+      if (!f.dob) return setError("Select your date of birth to continue.");
+      return go("license");
+    }
     if (from === "license") {
       if (!f.images.licenseFront) return setError("Take a photo of the front of your license.");
       if (!f.images.licenseBack) return setError("Take a photo of the back of your license — the barcode fills in your details.");
+      setManual(false);
       return go("insurance");
     }
     if (from === "insurance") {
@@ -219,14 +226,13 @@ export function Kiosk({ plans, initialPhone, demo }: { plans: string[]; initialP
       if (!form.insurance.plan) return setError("Choose your insurance plan.");
       if (!form.insurance.memberId) return setError("Enter your insurance member ID.");
     }
-    if (!consent) return setError("Please tick the box to confirm your details are correct.");
     setBusy("submit");
     setError("");
     try {
       const res = await fetch("/api/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, dob: form.license.dob }),
+        body: JSON.stringify({ ...form, manual }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Something went wrong.");
@@ -240,7 +246,7 @@ export function Kiosk({ plans, initialPhone, demo }: { plans: string[]; initialP
   }
 
   const stepIndex = FLOW.indexOf(step);
-  const back: Partial<Record<Step, Step>> = { insurance: "license", confirm: "insurance", byPhone: "license" };
+  const back: Partial<Record<Step, Step>> = { license: "dob", insurance: "license", confirm: manual ? "byPhone" : "insurance", byPhone: "license" };
   const planNotListed = form.insurance.plan === OTHER_PLAN;
 
   // Live viewfinder on top, captured front/back below. Falls back to the
@@ -300,9 +306,21 @@ export function Kiosk({ plans, initialPhone, demo }: { plans: string[]; initialP
 
       <main className="app-main">
         <div className="app-stack">
+          {step === "dob" && (
+            <>
+              <Header kicker="Step 1 of 4 · Fill out your details" title="Verify your date of birth"
+                sub="To keep your information safe, please confirm your date of birth before we start." />
+              <Field label="Date of birth">
+                <DatePicker value={form.dob} onChange={(v) => { setError(""); setForm((f) => ({ ...f, dob: v })); }} placeholder="Select your date of birth"
+                  min="1900-01-01" max={todayIso()} startYear={new Date().getFullYear() - 35} />
+              </Field>
+              <Hipaa />
+            </>
+          )}
+
           {step === "license" && (
             <>
-              <Header kicker="Step 1 of 3 · Fill out your details" title="Scan your driver's license"
+              <Header kicker="Step 2 of 4" title="Scan your driver's license"
                 sub="Hold your license up to the camera — front first, then the back. We'll fill in your details for you." />
               {renderScanner("license", LICENSE_SIDES)}
               {licenseNote && <Banner tone={licenseNote.tone}>{licenseNote.text}</Banner>}
@@ -313,7 +331,7 @@ export function Kiosk({ plans, initialPhone, demo }: { plans: string[]; initialP
 
           {step === "insurance" && (
             <>
-              <Header kicker="Step 2 of 3" title="Scan your insurance card"
+              <Header kicker="Step 3 of 4" title="Scan your insurance card"
                 sub="Hold your card up to the camera — front first, then the back. We'll read your plan and member ID." />
               {form.cashPay ? (
                 <>
@@ -341,8 +359,10 @@ export function Kiosk({ plans, initialPhone, demo }: { plans: string[]; initialP
 
           {step === "confirm" && (
             <>
-              <Header kicker="Step 3 of 3" title="Are these details correct?"
-                sub="We filled these in from your license and insurance card. Fix anything that's wrong." />
+              <Header kicker="Step 4 of 4" title={manual ? "Your details" : "Are these details correct?"}
+                sub={manual
+                  ? "Fill in your details below, as they appear on your license and insurance card."
+                  : "We filled these in from your license and insurance card. Fix anything that's wrong."} />
 
               <Section icon="user" title="Your details" auto={form.license.scanned} sample={demoSections.has("you")}>
                 <TextField label="Mobile number" type="tel" inputMode="tel" autoComplete="tel" value={form.phone}
@@ -355,6 +375,9 @@ export function Kiosk({ plans, initialPhone, demo }: { plans: string[]; initialP
                 <Field label="Date of birth">
                   <DatePicker value={form.license.dob} onChange={(v) => setLic({ dob: v })} placeholder="Select your date of birth"
                     min="1900-01-01" max={todayIso()} startYear={new Date().getFullYear() - 35} />
+                  {form.dob && form.license.dob && form.dob !== form.license.dob && (
+                    <span className="field__error">This doesn&apos;t match the date of birth you entered at the start ({formatDate(form.dob)}).</span>
+                  )}
                 </Field>
               </Section>
 
@@ -380,7 +403,7 @@ export function Kiosk({ plans, initialPhone, demo }: { plans: string[]; initialP
                 {form.cashPay ? (
                   <div className="app-row">
                     <span className="pill pill--gold">Self-pay</span>
-                    <button className="app-link" onClick={() => go("insurance")}>Use insurance instead</button>
+                    <button className="app-link" onClick={() => (manual ? setForm({ ...form, cashPay: false }) : go("insurance"))}>Use insurance instead</button>
                   </div>
                 ) : (
                   <>
@@ -406,25 +429,36 @@ export function Kiosk({ plans, initialPhone, demo }: { plans: string[]; initialP
                       <TextField label="Member ID" value={form.insurance.memberId} onChange={(v) => setIns({ memberId: v.toUpperCase() })} />
                       <TextField label="Group number" hint="Optional" value={form.insurance.groupNumber} onChange={(v) => setIns({ groupNumber: v.toUpperCase() })} />
                     </div>
+                    {manual && (
+                      <button className="app-link" onClick={() => setForm({ ...form, cashPay: true })}>I don&apos;t have insurance — I&apos;ll pay cash</button>
+                    )}
                   </>
                 )}
               </Section>
 
-              <label className="opt-row app-consent">
-                <input className="check check--lg" type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
-                <span>These details are correct, and I agree to share them and my card photos with the office to verify my identity and insurance.</span>
-              </label>
               <Hipaa />
             </>
           )}
 
           {step === "byPhone" && (
             <>
-              <Header title="No problem" sub="Let the agent on the phone know. They'll stay on the line and go through your details with you." />
-              <div className="notice notice--soft">
-                <span className="icon"><Icon name="info" size={18} color="#647689" /></span>
-                <div className="notice__text">You can also text a photo of your license and insurance card to the number that sent you this link.</div>
+              <Header title="No problem" sub="You can tell the agent on the phone, or type your details in yourself." />
+              <div className="app-stack app-stack--tight">
+                <button className={`choice ${toldAgent ? "is-selected" : ""}`} onClick={() => setToldAgent(true)}>
+                  <span className="choice__icon"><Icon name="phone" size={18} /></span>
+                  <span><span className="choice__title">Tell the agent</span><span className="choice__sub" style={{ display: "block" }}>They&apos;ll stay on the line and go through it with you</span></span>
+                </button>
+                <button className="choice" onClick={() => { setManual(true); setLic({ dob: form.license.dob || form.dob }); go("confirm"); }}>
+                  <span className="choice__icon"><Icon name="doc" size={18} /></span>
+                  <span><span className="choice__title">Type it in myself</span><span className="choice__sub" style={{ display: "block" }}>Fill in a short form — no photos needed</span></span>
+                </button>
               </div>
+              {toldAgent && (
+                <div className="notice notice--info">
+                  <span className="icon"><Icon name="phone" size={18} /></span>
+                  <div className="notice__text">Great — let the agent know you&apos;d like to go through it together. You can close this page.</div>
+                </div>
+              )}
             </>
           )}
 
