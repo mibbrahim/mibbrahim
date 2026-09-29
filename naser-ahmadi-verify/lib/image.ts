@@ -29,3 +29,20 @@ export async function readLicenseBarcode(file: File): Promise<string | null> {
   });
   return results.find((r) => r.isValid && r.text)?.text ?? null;
 }
+
+// Reads the printed text on a card photo (OCR) in the browser. The OCR engine
+// and English language data are downloaded on first use (~3 MB).
+export async function readCardText(image: string, onProgress?: (pct: number) => void): Promise<string> {
+  const { createWorker } = await import("tesseract.js");
+  const worker = await createWorker("eng", 1, {
+    logger: (m: { status: string; progress: number }) => {
+      if (m.status === "recognizing text") onProgress?.(Math.round(m.progress * 100));
+    },
+  });
+  try {
+    const { data } = await worker.recognize(image);
+    return data.text;
+  } finally {
+    await worker.terminate();
+  }
+}

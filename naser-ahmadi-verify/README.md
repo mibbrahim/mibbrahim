@@ -1,20 +1,21 @@
-# Naser Ahmadi – Patient Verification Link
+# Patient Form — verification link
 
-A kiosk-style link you text to patients while they're on the phone with an agent. The patient:
+A mobile-first page (Next.js / React) that the agent texts to a patient who is on the phone with them. The agent's link carries the patient's number (`/?phone=3105550100`), so the patient never types it.
 
-1. Confirms their phone number (pre-filled if the link has `?phone=3105550100`)
-2. Enters their date of birth
-3. Photographs their **California driver's license** (front + back). The barcode on the back is read automatically and fills in name, license #, DOB, expiration and address.
-4. Picks their insurance plan from the practice's accepted list and photographs the card. If the plan isn't listed, they're offered **cash pay**.
-5. Gets a 6-character code to read to the agent.
+1. **Scan your driver's license** (front + back). The PDF417 barcode on the back is read on the phone and fills in name, date of birth, address, license number and expiration.
+2. **Scan your insurance card**. The card text is read on the phone (OCR, tesseract.js) to find the insurer, member ID and group number. Patients without insurance tap **"I'll pay cash"**.
+3. **Are these details correct?** Everything is pre-filled and editable; the patient ticks the confirmation box and submits.
+4. The patient gets a 6-character code to read to the agent.
 
-Patients who'd rather not use the link can tap **"I'd rather do this over the phone"**, and the agent collects the details on the call.
+Patients who'd rather not use the link tap **"I'd rather do this over the phone"**.
+
+UI components come from the PracticeEHR design system (https://design-components-ks.netlify.app/). `app/ds/tokens.css` and `app/ds/components.css` are vendored verbatim; `app/app.css` only handles layout.
 
 The agent opens **`/agent`**, signs in with the agent PIN, and sees each submission with the photos and a pass/fail list:
 
 | Check | Rule |
 |---|---|
-| Date of birth | Typed DOB matches the DOB on the license |
+| Date of birth | Read from the license and plausible |
 | California license | Issuing state is CA and the number is 1 letter + 7 digits |
 | Not expired | Expiration date is today or later |
 | California address | ZIP code is in California (state found from ZIP), street and city present |
@@ -29,7 +30,6 @@ Status is **Verified**, **Needs review** (the agent goes over anything marked `!
 |---|---|
 | `ACCEPTED_PLANS` | Comma-separated accepted plans. **Replace the placeholder list with Naser Ahmadi's real list.** |
 | `AGENT_PIN` | PIN agents type on `/agent`. Required. |
-| `PRACTICE_NAME` | Name shown to patients (default "Dr. Naser Ahmadi's Office"). |
 | `KV_REST_API_URL` / `KV_REST_API_TOKEN` | Storage. Add **Upstash Redis** from Vercel → Storage / Marketplace and connect it to the project; these are set automatically. Without it, submissions won't reliably reach `/agent` on Vercel. |
 | `RETENTION_DAYS` | Days to keep submissions and photos (default 30). |
 

@@ -1,0 +1,117 @@
+/* App layout glue only. All component styling comes from ./ds (the PracticeEHR
+   design system); this file places those components on the page. Mobile first:
+   patients open the link on their phone. */
+
+html, body { margin: 0; background: var(--canvas); }
+body { min-height: 100dvh; display: flex; flex-direction: column; }
+button { font-family: inherit; }
+input, select, textarea { font-size: 16px !important; } /* stops iOS zooming into fields */
+
+/* Header */
+.app-topnav { position: sticky; top: 0; z-index: 20; height: 56px !important; padding: 0 16px !important; gap: 10px !important; }
+.app-topnav .topnav__logo { height: 22px; }
+.app-tag { margin-top: 0; padding-left: 8px; border-left: 1px solid var(--line); line-height: 22px; }
+.app-topnav .stepper__label { display: none; }
+.app-topnav .stepper__conn { width: 10px; }
+.app-topnav .status { padding: 3px 8px; font-size: 11px; }
+
+/* Page */
+.app-main { flex: 1; width: 100%; max-width: 520px; margin: 0 auto; padding: 20px 16px 28px; }
+.app-main--wide { max-width: 1040px; }
+.app-stack { display: flex; flex-direction: column; gap: 18px; }
+.app-stack--tight { gap: 14px; }
+.app-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.app-grid3 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.app-grid3 > :first-child { grid-column: 1 / -1; }
+.app-grid2 > *, .app-grid3 > * { min-width: 0; }
+.app-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.step-header__title { font-size: 27px; }
+.step-header__sub { font-size: 14.5px; }
+.card__head { padding: 14px 16px; }
+.card__body { padding: 16px; }
+.card--kiosk:not(.card--flush) { padding: 18px; }
+
+.app-link { align-self: center; background: none; border: none; padding: 8px 4px; cursor: pointer; color: var(--primary); font-size: 14px; font-weight: var(--fw-semibold); }
+
+/* Card illustration (license = blue, insurance = green, matching the DS scan card) */
+.app-cardart {
+  position: relative; overflow: hidden; width: 100%; aspect-ratio: 1.586; border-radius: 16px; color: #fff;
+  background: linear-gradient(135deg, #3D6FB8 0%, #2B5895 100%);
+  box-shadow: 0 14px 34px -14px rgba(43, 88, 149, .6), inset 0 0 0 1px rgba(255,255,255,.12);
+}
+.app-cardart--insurance { background: linear-gradient(135deg, #7CA28C 0%, #5C8470 100%); box-shadow: 0 14px 34px -14px rgba(92, 132, 112, .6), inset 0 0 0 1px rgba(255,255,255,.12); }
+.app-cardart::before { content: ""; position: absolute; inset: 10px; border: 1px solid rgba(255,255,255,.18); border-radius: 10px; }
+.app-cardart.has-photo { background: #0E1A24; }
+.app-cardart.has-photo::before { display: none; }
+.app-cardart img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.app-cardart__top { position: absolute; top: 22px; left: 24px; font-size: 11px; font-weight: 700; letter-spacing: .12em; opacity: .9; }
+.app-cardart__face { position: absolute; left: 24px; bottom: 26px; width: 26%; aspect-ratio: .8; border-radius: 8px; background: rgba(255,255,255,.16); display: flex; align-items: center; justify-content: center; }
+.app-cardart__lines { position: absolute; right: 24px; bottom: 30px; left: 38%; display: flex; flex-direction: column; gap: 10px; }
+.app-cardart--insurance .app-cardart__lines { left: 24px; }
+.app-cardart__lines span { display: block; height: 9px; border-radius: 5px; background: rgba(255,255,255,.28); }
+.app-cardart__scan { position: absolute; left: 0; right: 0; height: 2px; top: 0; background: linear-gradient(90deg, transparent, #9EC5FF, transparent); box-shadow: 0 0 14px 3px rgba(158,197,255,.55); animation: appScan 2.4s var(--ease-soft) infinite alternate; }
+@keyframes appScan { from { top: 12% } to { top: 88% } }
+@media (prefers-reduced-motion: reduce) { .app-cardart__scan { animation: none; top: 50%; } }
+
+/* Capture tiles */
+.capture-tile { height: 112px; }
+.capture-tile > input[type="file"] { display: none; }
+.app-capture-hint { font-size: 11px; color: var(--ink-4); margin-top: -4px; }
+
+.app-tips { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--ink-3); }
+.app-tips li { display: flex; align-items: center; gap: 8px; }
+
+.app-ocr { display: flex; flex-direction: column; gap: 8px; }
+.app-ocr .progress { max-width: none; }
+
+.app-consent { align-items: flex-start; font-size: 13.5px; line-height: 1.45; }
+.app-consent .check { margin-top: 2px; flex-shrink: 0; }
+
+/* Bottom bar */
+.app-bar { position: sticky; bottom: 0; z-index: 10; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)) !important; }
+.app-bar__inner { display: flex; align-items: center; gap: 10px; width: 100%; max-width: 520px; margin: 0 auto; }
+.app-cta { flex: 1; height: 50px !important; }
+
+/* Done */
+.app-done { align-items: center; gap: 12px; padding-top: 8px; }
+.app-done__icon { width: 70px; height: 70px; border-radius: 50%; }
+.app-code { font-family: var(--font-serif); font-size: 42px; letter-spacing: .14em; text-align: center; color: var(--ink); line-height: 1; padding: 6px 0; }
+.app-checks .list-row { cursor: default; }
+.app-checks .list-row:hover { background: var(--surface); }
+.app-check-icon { width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.app-check-icon.is-ok { background: var(--success-soft); color: var(--success); }
+.app-check-icon.is-bad { background: var(--danger-soft); color: var(--danger); }
+
+/* Agent console */
+.app-review { display: grid; grid-template-columns: max-content 1fr; gap: 10px 20px; margin: 0; font-size: 14px; }
+.app-review dt { color: var(--ink-3); }
+.app-review dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+.app-table-scroll { overflow-x: auto; }
+.app-table-scroll table { min-width: 620px; }
+.grid-tbl tbody tr { cursor: pointer; }
+.app-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+.app-gallery figure { margin: 0; }
+.app-gallery img { display: block; width: 100%; border-radius: 10px; border: 1px solid var(--line); }
+.app-gallery figcaption { margin-top: 6px; }
+
+@media (max-width: 600px) {
+  .app-hide-sm { display: none !important; }
+}
+@media (min-width: 600px) {
+  .app-topnav { height: 64px !important; padding: 0 28px !important; }
+  .app-topnav .topnav__logo { height: 28px; }
+  .app-topnav .stepper__label { display: inline; }
+  .app-topnav .stepper__conn { width: 22px; }
+  .app-main { padding: 32px 24px 40px; }
+  .step-header__title { font-size: 32px; }
+  .app-grid3 { grid-template-columns: 2fr .8fr 1.2fr; }
+  .app-grid3 > :first-child { grid-column: auto; }
+  .capture-tile { height: 130px; }
+}
+
+/* Bigger touch targets for the select menu on phones */
+.select__opt { padding: 12px; font-size: 15px; }
+@media (max-width: 420px) {
+  .app-hide-xs { display: none; }
+  .app-topnav { gap: 8px !important; }
+}

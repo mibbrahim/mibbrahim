@@ -39,13 +39,14 @@ export function runChecks(form: IntakeForm, accepted: string[], today = new Date
     },
     {
       id: "dob",
-      label: "Date of birth matches license",
-      ok: isIsoDate(form.dob) && form.dob === lic.dob,
-      detail:
-        !isIsoDate(lic.dob)
-          ? "No date of birth read from the license"
-          : form.dob !== lic.dob
-            ? `Entered ${form.dob || "nothing"}, license says ${lic.dob}`
+      label: "Date of birth on license",
+      ok: isIsoDate(lic.dob) && lic.dob < todayIso && lic.dob > "1900-01-01" && (!form.dob || form.dob === lic.dob),
+      detail: !isIsoDate(lic.dob)
+        ? "No date of birth read from the license"
+        : form.dob && form.dob !== lic.dob
+          ? `Entered ${form.dob}, license says ${lic.dob}`
+          : lic.dob >= todayIso || lic.dob <= "1900-01-01"
+            ? `Date of birth ${lic.dob} looks wrong`
             : undefined,
     },
     {

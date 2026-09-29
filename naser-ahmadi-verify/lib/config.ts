@@ -12,10 +12,6 @@ const DEFAULT_PLANS = [
   "Medicare Part B",
 ];
 
-export function practiceName(): string {
-  return process.env.PRACTICE_NAME?.trim() || "Dr. Naser Ahmadi's Office";
-}
-
 export function acceptedPlans(): string[] {
   const raw = process.env.ACCEPTED_PLANS;
   if (!raw) return DEFAULT_PLANS;
