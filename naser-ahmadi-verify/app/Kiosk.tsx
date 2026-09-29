@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
+import { CameraScanner, type ScanSide } from "@/components/CameraScanner";
 import { Icon, type IconName } from "@/components/Icon";
 import { Select } from "@/components/Select";
 import { Stepper, TopNav } from "@/components/TopNav";
@@ -16,6 +17,15 @@ const FLOW_LABELS = ["License", "Insurance", "Confirm"];
 type Result = { code: string; status: "verified" | "needs_review" | "cash_pay"; checks: Check[] };
 type Notice = { tone: "verified" | "pending" | "failed"; text: string } | null;
 type ImageKey = keyof IntakeForm["images"];
+
+const LICENSE_SIDES: ScanSide[] = [
+  { key: "licenseFront", label: "Front", hint: "Fit the front of your license inside the frame, then tap the button" },
+  { key: "licenseBack", label: "Back", hint: "Now flip it over — the barcode scans by itself" },
+];
+const INSURANCE_SIDES: ScanSide[] = [
+  { key: "insuranceFront", label: "Front", hint: "Fit the front of your card inside the frame, then tap the button" },
+  { key: "insuranceBack", label: "Back", hint: "Now the back of your card (optional)" },
+];
 
 function formatPhone(s: string): string {
   let d = s.replace(/\D/g, "");
@@ -50,6 +60,9 @@ export function Kiosk({ plans, initialPhone }: { plans: string[]; initialPhone: 
   const [cardNote, setCardNote] = useState<Notice>(null);
   const [ocrPct, setOcrPct] = useState<number | null>(null);
   const [result, setResult] = useState<Result | null>(null);
+  // Live camera unless it can't be opened, then fall back to the phone's photo picker.
+  const [camError, setCamError] = useState<string | null>(null);
+  const [retake, setRetake] = useState<ImageKey | null>(null);
 
   const setLic = (patch: Partial<IntakeForm["license"]>) =>
     setForm((f) => ({ ...f, license: { ...f.license, ...patch } }));
@@ -62,7 +75,22 @@ export function Kiosk({ plans, initialPhone }: { plans: string[]; initialPhone: 
     window.scrollTo({ top: 0 });
   };
 
-  async function onPhoto(key: ImageKey, file: File | undefined) {
+  // Barcode check run on live camera frames while the back of the license is in view.
+  const detectBarcode = useCallback(async (frame: ImageData) => {
+    const text = await readLicenseBarcode(frame, true);
+    return text && isAamva(text) ? text : null;
+  }, []);
+
+  function scanSide(sides: ScanSide[]): ScanSide | null {
+    return sides.find((s) => s.key === retake) ?? sides.find((s) => !form.images[s.key as ImageKey]) ?? null;
+  }
+
+  function onCapture(key: string, file: File, detected?: string) {
+    setRetake(null);
+    onPhoto(key as ImageKey, file, detected);
+  }
+
+  async function onPhoto(key: ImageKey, file: File | undefined, detected?: string) {
     if (!file) return;
     setError("");
     setBusy(key);
@@ -78,7 +106,7 @@ export function Kiosk({ plans, initialPhone }: { plans: string[]; initialPhone: 
 
     if (key === "licenseBack") {
       setLicenseNote({ tone: "pending", text: "Reading the barcode on your license…" });
-      const text = await readLicenseBarcode(file).catch(() => null);
+      const text = detected ?? (await readLicenseBarcode(file).catch(() => null));
       if (text && isAamva(text)) {
         const { licenseNumber, ...rest } = parseAamva(text);
         const patch = Object.fromEntries(
@@ -164,6 +192,57 @@ export function Kiosk({ plans, initialPhone }: { plans: string[]; initialPhone: 
   const back: Partial<Record<Step, Step>> = { insurance: "license", confirm: "insurance", byPhone: "license" };
   const planNotListed = form.insurance.plan === OTHER_PLAN;
 
+  // Live viewfinder on top, captured front/back below. Falls back to the
+  // photo picker when the camera can't be opened.
+  function renderScanner(kind: "license" | "insurance", sides: ScanSide[]) {
+    const active = scanSide(sides);
+    if (camError) {
+      return (
+        <>
+          <div className="notice notice--soft">
+            <span className="icon"><Icon name="camera" size={18} color="#647689" /></span>
+            <div className="notice__text">{camError} Tap below to take or choose a photo instead.</div>
+          </div>
+          <CardArt kind={kind} photo={form.images[sides[0].key as ImageKey]} />
+          <div className="capture-grid">
+            {sides.map((s) => (
+              <Capture key={s.key} label={s.label} hint={s.key === "licenseBack" ? "Barcode side" : s.key === "insuranceBack" ? "Optional" : "Photo side"}
+                value={form.images[s.key as ImageKey]} busy={busy === s.key} onFile={(f) => onPhoto(s.key as ImageKey, f)} />
+            ))}
+          </div>
+        </>
+      );
+    }
+    return (
+      <>
+        <CameraScanner kind={kind} side={active} done={!active}
+          detect={kind === "license" && active?.key === "licenseBack" ? detectBarcode : undefined}
+          onCapture={onCapture} onUnavailable={setCamError} />
+        <div className="capture-grid app-shots">
+          {sides.map((s) => {
+            const img = form.images[s.key as ImageKey];
+            const isActive = active?.key === s.key;
+            return (
+              <button key={s.key} type="button"
+                className={`capture-tile app-shot ${img ? "is-done" : ""} ${isActive ? "is-active" : ""}`}
+                onClick={() => setRetake(s.key as ImageKey)} aria-label={img ? `Retake ${s.label.toLowerCase()}` : `Scan ${s.label.toLowerCase()}`}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                {img && <img className="app-shot__img" src={img} alt="" />}
+                <span className="capture-tile__corner">{s.label}</span>
+                {busy === s.key ? <span className="spinner" /> : !img && (
+                  <span className="capture-tile__icon"><Icon name="camera" size={18} /></span>
+                )}
+                <span className="capture-tile__text">
+                  {busy === s.key ? "Saving…" : img ? (isActive ? "Retaking…" : "Saved · tap to retake") : isActive ? "Scanning now…" : "Waiting"}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <TopNav tag="Patient Form" center={stepIndex >= 0 ? <Stepper steps={FLOW_LABELS} current={stepIndex} /> : undefined} />
@@ -173,14 +252,10 @@ export function Kiosk({ plans, initialPhone }: { plans: string[]; initialPhone: 
           {step === "license" && (
             <>
               <Header kicker="Step 1 of 3 · Fill out your details" title="Scan your driver's license"
-                sub="Take a photo of the front and back. We'll fill in your details for you." />
-              <CardArt kind="license" photo={form.images.licenseFront} />
-              <div className="capture-grid">
-                <Capture label="Front" hint="Photo side" value={form.images.licenseFront} busy={busy === "licenseFront"} onFile={(f) => onPhoto("licenseFront", f)} />
-                <Capture label="Back" hint="Barcode side" value={form.images.licenseBack} busy={busy === "licenseBack"} onFile={(f) => onPhoto("licenseBack", f)} />
-              </div>
+                sub="Hold your license up to the camera — front first, then the back. We'll fill in your details for you." />
+              {renderScanner("license", LICENSE_SIDES)}
               {licenseNote && <Banner tone={licenseNote.tone}>{licenseNote.text}</Banner>}
-              <Tips items={["Lay the card flat on a dark surface", "Good light, no glare", "Fit the whole card in the photo"]} />
+              <Tips items={["Put the card on a dark surface", "Good light, no glare", "Fill the frame with the card"]} />
               <button className="app-link" onClick={() => go("byPhone")}>I&apos;d rather do this over the phone</button>
             </>
           )}
@@ -188,7 +263,7 @@ export function Kiosk({ plans, initialPhone }: { plans: string[]; initialPhone: 
           {step === "insurance" && (
             <>
               <Header kicker="Step 2 of 3" title="Scan your insurance card"
-                sub="Take a photo of the front and back. We'll read your plan and member ID." />
+                sub="Hold your card up to the camera — front first, then the back. We'll read your plan and member ID." />
               {form.cashPay ? (
                 <>
                   <div className="notice notice--gold">
@@ -199,11 +274,7 @@ export function Kiosk({ plans, initialPhone }: { plans: string[]; initialPhone: 
                 </>
               ) : (
                 <>
-                  <CardArt kind="insurance" photo={form.images.insuranceFront} />
-                  <div className="capture-grid">
-                    <Capture label="Front" hint="Name & member ID" value={form.images.insuranceFront} busy={busy === "insuranceFront"} onFile={(f) => onPhoto("insuranceFront", f)} />
-                    <Capture label="Back" hint="Optional" value={form.images.insuranceBack} busy={busy === "insuranceBack"} onFile={(f) => onPhoto("insuranceBack", f)} />
-                  </div>
+                  {renderScanner("insurance", INSURANCE_SIDES)}
                   {ocrPct !== null && (
                     <div className="app-ocr">
                       <div className="progress"><div className="progress__fill" style={{ width: `${Math.max(6, ocrPct)}%` }} /></div>

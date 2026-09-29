@@ -12,18 +12,18 @@ export async function compressImage(file: File, maxSide = 1400, quality = 0.72):
   return canvas.toDataURL("image/jpeg", quality);
 }
 
-// Reads the PDF417 barcode on the back of a driver's license. Uses the
-// original full-resolution file; barcodes need the detail.
-export async function readLicenseBarcode(file: File): Promise<string | null> {
+// Reads the PDF417 barcode on the back of a driver's license, from a photo
+// (full resolution — barcodes need the detail) or a live camera frame.
+export async function readLicenseBarcode(input: Blob | ImageData, quick = false): Promise<string | null> {
   const { prepareZXingModule, readBarcodes } = await import("zxing-wasm/reader");
   prepareZXingModule({
     overrides: {
       locateFile: (path: string, prefix: string) => (path.endsWith(".wasm") ? "/zxing_reader.wasm" : prefix + path),
     },
   });
-  const results = await readBarcodes(file, {
+  const results = await readBarcodes(input, {
     formats: ["PDF417"],
-    tryHarder: true,
+    tryHarder: !quick, // live frames are checked several times a second
     maxNumberOfSymbols: 1,
     textMode: "Plain",
   });

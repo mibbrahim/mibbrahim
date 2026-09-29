@@ -58,6 +58,64 @@ input, select, textarea { font-size: 16px !important; } /* stops iOS zooming int
 .capture-tile > input[type="file"] { display: none; }
 .app-capture-hint { font-size: 11px; color: var(--ink-4); margin-top: -4px; }
 
+/* Live camera viewfinder */
+.app-cam {
+  position: relative; overflow: hidden; width: 100%; aspect-ratio: 1.4; border-radius: 18px;
+  background: radial-gradient(120% 90% at 50% 40%, #1d2c3a 0%, #0E1A24 70%);
+  box-shadow: 0 16px 40px -18px rgba(14, 26, 36, .7);
+}
+.app-cam video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity var(--dur-slow); }
+.app-cam video.is-live { opacity: 1; }
+.app-cam__guide {
+  position: absolute; left: 6%; right: 6%; top: 50%; transform: translateY(-50%); aspect-ratio: 1.586; border-radius: 14px;
+  box-shadow: 0 0 0 999px rgba(14, 26, 36, .45); /* dims everything outside the card */
+  border: 1.5px solid rgba(255, 255, 255, .35);
+}
+.app-cam__guide i { position: absolute; width: 26px; height: 26px; border: 3.5px solid #fff; }
+.app-cam__guide i:nth-child(1) { top: -3px; left: -3px; border-right: 0; border-bottom: 0; border-top-left-radius: 14px; }
+.app-cam__guide i:nth-child(2) { top: -3px; right: -3px; border-left: 0; border-bottom: 0; border-top-right-radius: 14px; }
+.app-cam__guide i:nth-child(3) { bottom: -3px; left: -3px; border-right: 0; border-top: 0; border-bottom-left-radius: 14px; }
+.app-cam__guide i:nth-child(4) { bottom: -3px; right: -3px; border-left: 0; border-top: 0; border-bottom-right-radius: 14px; }
+.app-cam--insurance .app-cam__guide i { border-color: #BFE3CC; }
+.app-cam__scan { position: absolute; left: 6%; right: 6%; height: 2px; background: linear-gradient(90deg, transparent, #9EC5FF, transparent); box-shadow: 0 0 14px 3px rgba(158,197,255,.55); animation: appCamScan 2.2s var(--ease-soft) infinite alternate; }
+@keyframes appCamScan { from { top: 20% } to { top: 80% } }
+.app-cam__chip {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%); white-space: nowrap;
+  padding: 5px 12px; border-radius: var(--r-pill); background: rgba(14, 26, 36, .62); color: #fff;
+  font-size: 12px; font-weight: var(--fw-medium); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+.app-cam__auto { color: #9EC5FF; }
+.app-cam__hint {
+  position: absolute; left: 10px; right: 78px; bottom: 12px; padding: 7px 10px; border-radius: 10px;
+  background: rgba(14, 26, 36, .7); color: #fff; font-size: 12.5px; line-height: 1.35;
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+.app-cam__shutter {
+  position: absolute; right: 12px; bottom: 10px; width: 58px; height: 58px; border-radius: 50%; border: 3px solid #fff;
+  background: rgba(255,255,255,.18); padding: 4px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.app-cam__shutter span { display: block; width: 100%; height: 100%; border-radius: 50%; background: #fff; transition: transform .1s; }
+.app-cam__shutter:active span { transform: scale(.86); }
+.app-cam__shutter:disabled { opacity: .45; }
+.app-cam__flash { position: absolute; inset: 0; background: #fff; animation: appFlash .18s ease-out forwards; }
+@keyframes appFlash { from { opacity: .85 } to { opacity: 0 } }
+.app-cam__done { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: #fff; font-size: 16px; font-weight: var(--fw-semibold); }
+.app-cam__done small { font-size: 12.5px; font-weight: var(--fw-regular); opacity: .75; }
+@media (prefers-reduced-motion: reduce) { .app-cam__scan { animation: none; top: 50%; } }
+
+/* Captured shots under the viewfinder */
+.app-shots { grid-template-columns: 1fr 1fr; }
+.app-shot { overflow: hidden; font-family: inherit; padding: 0; }
+.app-shot.is-done { border: 2px solid var(--success); }
+.app-shot__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.app-shot.is-done .capture-tile__text {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 6px; font-size: 11.5px; text-align: center;
+  background: rgba(14, 26, 36, .6); color: #fff;
+}
+.app-shot.is-done .capture-tile__corner { z-index: 1; padding: 2px 6px; border-radius: 6px; background: rgba(255,255,255,.9); color: var(--ink-2); }
+.app-shot.is-active { border-color: var(--primary); border-style: solid; box-shadow: 0 0 0 3px var(--primary-soft); }
+.app-shot.is-active:not(.is-done) .capture-tile__text { color: var(--primary); font-weight: var(--fw-semibold); }
+
 .app-tips { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--ink-3); }
 .app-tips li { display: flex; align-items: center; gap: 8px; }
 
