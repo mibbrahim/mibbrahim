@@ -1,6 +1,6 @@
 # Patient Form — verification link
 
-A mobile-first page (Next.js / React) that the agent texts to a patient who is on the phone with them. The agent's link carries the patient's number (`/?phone=3105550100`), so the patient never types it.
+A mobile-first page (Next.js / React) that the agent texts to a patient who is on the phone with them. The agent's link carries the patient's mobile number (`/?phone=3105550100`; `?mobile=` and `?p=` also work), and it is shown pre-filled on the confirm screen as "From the text message we sent you".
 
 1. **Scan your driver's license** (front + back). The PDF417 barcode on the back is read on the phone and fills in name, date of birth, address, license number and expiration.
 2. **Scan your insurance card**. The card text is read on the phone (OCR, tesseract.js) to find the insurer, member ID and group number. Patients without insurance tap **"I'll pay cash"**.

@@ -7,7 +7,7 @@ import { Select } from "@/components/Select";
 import { Stepper, TopNav } from "@/components/TopNav";
 import { isAamva, parseAamva } from "@/lib/aamva";
 import { compressImage, readCardText, readLicenseBarcode } from "@/lib/image";
-import { DEMO_LICENSE, demoInsurance } from "@/lib/demo";
+import { DEMO_LICENSE, DEMO_PHONE, demoInsurance } from "@/lib/demo";
 import { parseInsuranceText } from "@/lib/insurance";
 import { parseLicenseText } from "@/lib/license";
 import { OTHER_PLAN, type Check, type IntakeForm } from "@/lib/types";
@@ -52,7 +52,7 @@ const emptyForm = (phone: string): IntakeForm => ({
 
 export function Kiosk({ plans, initialPhone, demo }: { plans: string[]; initialPhone: string; demo: boolean }) {
   // The phone number comes from the texted link; only ask for it if it's missing.
-  const [askPhone] = useState(() => initialPhone.replace(/\D/g, "").length < 10);
+  const [phoneFromLink] = useState(() => formatPhone(initialPhone).replace(/\D/g, "").length === 10);
   const [step, setStep] = useState<Step>("license");
   const [form, setForm] = useState<IntakeForm>(() => emptyForm(initialPhone));
   const [consent, setConsent] = useState(false);
@@ -180,6 +180,8 @@ export function Kiosk({ plans, initialPhone, demo }: { plans: string[]; initialP
     const sections = new Set<string>();
     for (const [section, keys] of groups) if (keys.some((k) => !form.license[k])) sections.add(section);
     if (!form.cashPay && insKeys.some((k) => !form.insurance[k])) sections.add("insurance");
+    const noPhone = form.phone.replace(/\D/g, "").length !== 10;
+    if (noPhone) sections.add("you");
     setDemoSections(sections);
     // Functional update: only empty fields, so a scan finishing now isn't overwritten.
     setForm((f) => {
@@ -187,7 +189,7 @@ export function Kiosk({ plans, initialPhone, demo }: { plans: string[]; initialP
       for (const [, keys] of groups) for (const k of keys) if (!lic[k]) lic[k] = DEMO_LICENSE[k];
       const ins = { ...f.insurance };
       if (!f.cashPay) for (const k of insKeys) if (!ins[k]) ins[k] = d[k];
-      return { ...f, license: lic, insurance: ins };
+      return { ...f, license: lic, insurance: ins, phone: noPhone ? formatPhone(DEMO_PHONE) : f.phone };
     });
   }
 
@@ -207,7 +209,7 @@ export function Kiosk({ plans, initialPhone, demo }: { plans: string[]; initialP
 
   async function submit() {
     const l = form.license;
-    if (askPhone && form.phone.replace(/\D/g, "").length !== 10) return setError("Enter your 10-digit mobile number.");
+    if (form.phone.replace(/\D/g, "").length !== 10) return setError("Enter your 10-digit mobile number.");
     if (!l.firstName || !l.lastName || !l.dob || !l.number || !l.expiration || !l.street || !l.city || !l.zip)
       return setError("Please fill in all your details.");
     if (!form.cashPay) {
@@ -340,10 +342,9 @@ export function Kiosk({ plans, initialPhone, demo }: { plans: string[]; initialP
                 sub="We filled these in from your license and insurance card. Fix anything that's wrong." />
 
               <Section icon="user" title="Your details" auto={form.license.scanned} sample={demoSections.has("you")}>
-                {askPhone && (
-                  <TextField label="Mobile number" type="tel" inputMode="tel" autoComplete="tel" value={form.phone}
-                    onChange={(v) => setForm({ ...form, phone: formatPhone(v) })} />
-                )}
+                <TextField label="Mobile number" type="tel" inputMode="tel" autoComplete="tel" value={form.phone}
+                  hint={phoneFromLink ? "From the text message we sent you" : undefined}
+                  onChange={(v) => setForm({ ...form, phone: formatPhone(v) })} />
                 <div className="app-grid2">
                   <TextField label="First name" value={form.license.firstName} onChange={(v) => setLic({ firstName: v })} autoComplete="given-name" />
                   <TextField label="Last name" value={form.license.lastName} onChange={(v) => setLic({ lastName: v })} autoComplete="family-name" />
