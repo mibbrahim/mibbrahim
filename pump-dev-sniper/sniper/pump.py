@@ -184,6 +184,8 @@ class Reader:
         lo, hi = struct.unpack_from("<QQ", self.b, self.o); self.o += 16; return lo | (hi << 64)
 
     def pubkey(self) -> str:
+        if self.o + 32 > len(self.b):
+            raise ValueError("truncated pubkey")
         v = Pubkey.from_bytes(self.b[self.o:self.o + 32]); self.o += 32; return str(v)
 
     def string(self) -> str:
@@ -287,7 +289,7 @@ def decode_program_data(log_line: str):
             return decode_trade(b)
         if b[:8] == EV_CREATE:
             return decode_create(b)
-    except (struct.error, IndexError, ValueError):
+    except Exception:   # malformed/foreign log lines (incl. solders PanicException) are skipped
         return None
     return None
 

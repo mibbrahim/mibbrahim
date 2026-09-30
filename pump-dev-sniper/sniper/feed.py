@@ -41,7 +41,7 @@ class PumpFeed:
                         except asyncio.TimeoutError:
                             continue
                         await self._handle(json.loads(raw), on_create, on_trade)
-            except (OSError, websockets.WebSocketException, asyncio.TimeoutError) as e:
+            except Exception as e:
                 if stop.is_set():
                     break
                 self.reconnects += 1
