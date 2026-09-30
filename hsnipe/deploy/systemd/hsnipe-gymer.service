@@ -1,0 +1,26 @@
+[Unit]
+Description=hsnipe Gymer Bot (pump.fun, HS_MODE=gymer)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=hsnipe
+Group=hsnipe
+# Each strategy gets its own directory: logs/, STOP, KILL and positions.json live here.
+WorkingDirectory=/opt/hsnipe/gymer
+EnvironmentFile=/etc/hsnipe/common.env
+EnvironmentFile=/etc/hsnipe/gymer.env
+Environment=HS_MODE=gymer
+Environment=HS_LOG_DIR=/opt/hsnipe/gymer/logs
+ExecStart=/opt/hsnipe/bin/hsnipe run
+Restart=always
+RestartSec=2
+# SIGTERM makes the bot flush logs and write a final summary.json
+KillSignal=SIGTERM
+TimeoutStopSec=15
+LimitNOFILE=65536
+Nice=-5
+
+[Install]
+WantedBy=multi-user.target
