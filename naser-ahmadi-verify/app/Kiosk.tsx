@@ -201,7 +201,7 @@ export function Kiosk({ plans, initialPhone, demo }: { plans: string[]; initialP
   function next(from: Step) {
     const f = form;
     if (from === "dob") {
-      if (!f.dob) return setError("Select your date of birth to continue.");
+      if (!f.dob) return setError("Enter your date of birth to continue.");
       return go("license");
     }
     if (from === "license") {
@@ -311,7 +311,7 @@ export function Kiosk({ plans, initialPhone, demo }: { plans: string[]; initialP
               <Header kicker="Step 1 of 4 · Fill out your details" title="Verify your date of birth"
                 sub="To keep your information safe, please confirm your date of birth before we start." />
               <Field label="Date of birth">
-                <DatePicker value={form.dob} onChange={(v) => { setError(""); setForm((f) => ({ ...f, dob: v })); }} placeholder="Select your date of birth"
+                <DatePicker value={form.dob} onChange={(v) => { setError(""); setForm((f) => ({ ...f, dob: v })); }} autoComplete="bday"
                   min="1900-01-01" max={todayIso()} startYear={new Date().getFullYear() - 35} />
               </Field>
               <Hipaa />
@@ -373,7 +373,7 @@ export function Kiosk({ plans, initialPhone, demo }: { plans: string[]; initialP
                   <TextField label="Last name" value={form.license.lastName} onChange={(v) => setLic({ lastName: v })} autoComplete="family-name" />
                 </div>
                 <Field label="Date of birth">
-                  <DatePicker value={form.license.dob} onChange={(v) => setLic({ dob: v })} placeholder="Select your date of birth"
+                  <DatePicker value={form.license.dob} onChange={(v) => setLic({ dob: v })} autoComplete="bday"
                     min="1900-01-01" max={todayIso()} startYear={new Date().getFullYear() - 35} />
                   {form.dob && form.license.dob && form.dob !== form.license.dob && (
                     <span className="field__error">This doesn&apos;t match the date of birth you entered at the start ({formatDate(form.dob)}).</span>
@@ -395,7 +395,7 @@ export function Kiosk({ plans, initialPhone, demo }: { plans: string[]; initialP
                 <TextField label="License number" value={form.license.number} placeholder="A1234567"
                   onChange={(v) => setLic({ number: v.toUpperCase().replace(/\s/g, "") })} />
                 <Field label="Expires">
-                  <DatePicker value={form.license.expiration} onChange={(v) => setLic({ expiration: v })} placeholder="Expiry date" />
+                  <DatePicker value={form.license.expiration} onChange={(v) => setLic({ expiration: v })} />
                 </Field>
               </Section>
 
