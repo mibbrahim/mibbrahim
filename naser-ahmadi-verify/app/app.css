@@ -190,3 +190,20 @@ input, select, textarea { font-size: 16px !important; } /* stops iOS zooming int
   .app-topnav .topnav__right { display: none; } /* room for the 4-step progress */
   .app-topnav .stepper__circle { width: 20px; height: 20px; }
 }
+
+/* Typeable date field (design-system Date Picker trigger with a text input) */
+.app-dp-field { cursor: text; gap: 6px; padding: 0 6px 0 4px; }
+.app-dp-field:focus-within { box-shadow: inset 0 0 0 2px var(--primary) !important; }
+.app-dp-field.is-error { box-shadow: inset 0 0 0 1.5px var(--rose) !important; }
+.app-dp-input {
+  flex: 1; min-width: 0; height: 100%; border: none; outline: none; background: transparent; padding: 0;
+  font-family: var(--font-sans); font-weight: var(--fw-medium); color: var(--ink); letter-spacing: .02em;
+}
+.app-dp-input::placeholder { color: var(--ink-4); font-weight: var(--fw-regular); }
+.app-dp-btn {
+  display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; flex-shrink: 0;
+  border: none; background: none; border-radius: 8px; cursor: pointer; color: var(--ink-3); padding: 0;
+}
+.app-dp-btn:hover { background: var(--inset); }
+.app-dp-btn.chev { margin-left: 0; }
+.app-datepicker > .field__error { display: block; margin-top: 5px; }

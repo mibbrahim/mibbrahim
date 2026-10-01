@@ -23,13 +23,68 @@ export const formatDate = (v: string) => {
   return p ? `${MONTHS[p.m]} ${String(p.d).padStart(2, "0")}, ${p.y}` : "";
 };
 
-export function DatePicker({ id, value, onChange, placeholder = "Select a date", min, max, startYear }: {
+// ISO "1985-04-12" → "04/12/1985", the format patients type.
+const toTyped = (v: string) => {
+  const p = parse(v);
+  return p ? `${String(p.m + 1).padStart(2, "0")}/${String(p.d).padStart(2, "0")}/${p.y}` : "";
+};
+
+// Digits → "MM", "MM/DD", "MM/DD/YYYY" as the patient types.
+function mask(raw: string): string {
+  const d = raw.replace(/\D/g, "").slice(0, 8);
+  if (d.length > 4) return `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4)}`;
+  if (d.length > 2) return `${d.slice(0, 2)}/${d.slice(2)}`;
+  return d;
+}
+
+export function DatePicker({ id, value, onChange, placeholder = "MM/DD/YYYY", min, max, startYear, autoComplete }: {
   id?: string; value: string; onChange: (v: string) => void; placeholder?: string;
   min?: string; max?: string; // ISO dates; days outside are disabled
   startYear?: number; // year to open on when there's no value (e.g. ~35 years ago for a date of birth)
+  autoComplete?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
+  // Typed text, kept separate from `value` so a half-typed date isn't wiped.
+  const [text, setText] = useState(() => toTyped(value));
+  const [typeError, setTypeError] = useState("");
+  const emitted = useRef(value);
+
+  // Sync when the value changes from outside (calendar pick, auto-fill from a scan).
+  useEffect(() => {
+    if (value !== emitted.current) {
+      emitted.current = value;
+      setText(toTyped(value));
+      setTypeError("");
+    }
+  }, [value]);
+
+  function emit(v: string) {
+    emitted.current = v;
+    if (v !== value) onChange(v);
+  }
+
+  function onType(raw: string) {
+    const t = mask(raw);
+    setText(t);
+    setTypeError("");
+    const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(t);
+    if (!m) return emit("");
+    const [mm, dd, yyyy] = [Number(m[1]), Number(m[2]), Number(m[3])];
+    const d = new Date(Date.UTC(yyyy, mm - 1, dd));
+    const real = d.getUTCFullYear() === yyyy && d.getUTCMonth() === mm - 1 && d.getUTCDate() === dd;
+    const v = iso(yyyy, mm - 1, dd);
+    if (!real) { setTypeError("That date doesn't exist — check the month and day."); return emit(""); }
+    if (outOfRange(v)) {
+      setTypeError(max && v > max ? "That date is in the future." : "Please check the year.");
+      return emit("");
+    }
+    emit(v);
+  }
+
+  function onBlurInput() {
+    if (text && text.length < 10) setTypeError("Enter the full date as MM/DD/YYYY.");
+  }
   const [view, setView] = useState<View>("days");
   const today = new Date();
   const init = parse(value) ?? { y: startYear ?? today.getFullYear(), m: startYear ? 0 : today.getMonth(), d: 1 };
@@ -75,11 +130,18 @@ export function DatePicker({ id, value, onChange, placeholder = "Select a date",
 
   return (
     <div ref={ref} className={`datepicker app-datepicker ${open ? "is-open" : ""}`}>
-      <button id={id} type="button" className="datepicker__trigger" aria-haspopup="dialog" aria-expanded={open} onClick={toggle}>
-        <span className="icon"><Icon name="cal" size={16} /></span>
-        <span style={{ color: value ? undefined : "var(--ink-4)" }}>{value ? formatDate(value) : placeholder}</span>
-        <span className="chev"><Icon name="chevD" size={14} sw={2} /></span>
-      </button>
+      <div className={`datepicker__trigger app-dp-field ${typeError ? "is-error" : ""}`}>
+        <button type="button" className="app-dp-btn icon" aria-label="Open calendar" aria-haspopup="dialog" aria-expanded={open} onClick={toggle}>
+          <Icon name="cal" size={16} />
+        </button>
+        <input id={id} className="app-dp-input" type="text" inputMode="numeric" autoComplete={autoComplete} placeholder={placeholder}
+          aria-invalid={Boolean(typeError)} value={text} maxLength={10}
+          onChange={(e) => onType(e.target.value)} onBlur={onBlurInput} />
+        <button type="button" className="app-dp-btn chev" aria-label="Open calendar" tabIndex={-1} onClick={toggle}>
+          <Icon name="chevD" size={14} sw={2} />
+        </button>
+      </div>
+      {typeError && <span className="field__error" role="alert">{typeError}</span>}
       {open && (
         <div className="datepicker__pop" role="dialog" aria-label="Choose a date">
           <div className="cal">
