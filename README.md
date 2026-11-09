@@ -1,57 +1,29 @@
+## Hi, I'm Ibrahim
 
-<h1 align="center">Hi 👋, I'm Ibrahim</h1>
-<h3 align="center">🔍 Data Science Enthusiast | 🤖 ML Explorer | 🐍 Python Tinkerer</h3>
+I'm a Product Manager for AI & Platform at Practice EHR, based in Islamabad, Pakistan.
 
-<p align="center">
-  <a href="https://github.com/mibbrahim">
-    <img src="https://komarev.com/ghpvc/?username=mibbrahim&label=Profile%20views&color=0e75b6&style=flat" alt="Profile Views" />
-  </a>
-  <a href="https://linkedin.com/in/mouhammadibrahim" target="_blank">
-    <img src="https://img.shields.io/badge/LinkedIn-blue?style=flat-square&logo=linkedin" alt="LinkedIn" />
-  </a>
-  <a href="mailto:ibbraahimmuhammad@gmail.com">
-    <img src="https://img.shields.io/badge/Email-D14836?style=flat-square&logo=gmail&logoColor=white" alt="Email" />
-  </a>
-</p>
+I own the AI backlog for our EHR platform and run delivery across seven Jira teams. Most of my work is turning clinical and business goals into AI features that are safe to ship. That covers AI Scribe, an in-product assistant, clinical and medication summarization, and patient visit summaries, each with human review before anything reaches a chart or a patient.
 
----
+Before Practice EHR, I spent two years as a Revenue Management Data Analyst at Airblue. There I built forecasting models and Tableau/Power BI dashboards, and wrote a Python bot that cut manual KPI work by over 70%. I studied Software Engineering at Air University and started out as an engineering intern at TPL Trakker.
 
-### 🚀 About Me
+### What's in here
 
-- 🔭 Currently working on: **Real-Time Multimodal Misinformation Detection at Scale**
-- 🌱 Exploring: **Deep Learning** & **AI for Social Good**
-- 💬 Let’s talk about: `Python`, `Pandas`, `Scikit-learn`, `Jupyter`, and all things **data wrangling**
-- 🧠 Motto: _"Turning messy data into meaningful insights!"_
+This GitHub is mostly prototypes and side projects. I use them to test product ideas quickly before they go to a team.
 
----
+**Product prototypes**
+- [unified-tagging-system](https://github.com/mibbrahim/unified-tagging-system): an interactive prototype for a recruitment marketplace (PM case study)
+- [coveragecat-redesign](https://github.com/mibbrahim/coveragecat-redesign): a site redesign with a live insurance Q&A agent
+- [spotter-weather-truck-routing](https://github.com/mibbrahim/spotter-weather-truck-routing): weather-aware truck routing
 
-### 🛠️ Languages & Tools I Use
+**Data and ML (earlier work)**
+- [StockForecastingLSTM](https://github.com/mibbrahim/StockForecastingLSTM): stock price forecasting with an LSTM
+- [HubSpot-Prospect-Conversion](https://github.com/mibbrahim/HubSpot-Prospect-Conversion): predicting prospect conversion
+- [MedicalAiAgents](https://github.com/mibbrahim/MedicalAiAgents): an experiment with medical AI agents
 
-![Python](https://img.shields.io/badge/-Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![Jupyter](https://img.shields.io/badge/-Jupyter-F37626?style=for-the-badge&logo=jupyter&logoColor=white)
-![Pandas](https://img.shields.io/badge/-Pandas-150458?style=for-the-badge&logo=pandas)
-![NumPy](https://img.shields.io/badge/-NumPy-013243?style=for-the-badge&logo=numpy)
-![Scikit-learn](https://img.shields.io/badge/-Scikit--learn-F7931E?style=for-the-badge&logo=scikit-learn)
-![TensorFlow](https://img.shields.io/badge/-TensorFlow-FF6F00?style=for-the-badge&logo=tensorflow)
-![VS Code](https://img.shields.io/badge/-VSCode-007ACC?style=for-the-badge&logo=visual-studio-code)
-![Git](https://img.shields.io/badge/-Git-F05032?style=for-the-badge&logo=git&logoColor=white)
+### Tools I work with
 
----
+Jira (admin), Confluence, Figma, Python, SQL, Tableau, Power BI, and LLM APIs for prototyping.
 
-### 📌 Featured Projects
- 
-- 🔹 [HubsSpot Prospect Conversion](https://github.com/mibbrahim/HubSpot-Prospect-Conversion)  
-- 🔹 [Medical Agent](https://github.com/mibbrahim/MedicalAiAgents)  
-- 🔹 [Titanic Survival Prediction](https://github.com/mibbrahim/TitanicSurvivalPrediction_DataScience)  
-- 🔹 [Stock Price Forecasting with LSTM](https://github.com/mibbrahim/StockForecastingLSTM)  
+### Find me
 
-
-
-### ☕ Productivity Tracker
-
-```text
-This week’s fuel:
-☕ 6 cups of coffee
-🎵 12 hours of lo-fi beats
-⌨️ Thousands of lines of Python
-
+[LinkedIn](https://www.linkedin.com/in/mouhammaddibrahimm) · [Portfolio](https://mibbrahim.github.io) · [Email](mailto:ibbraahimmuhammad@gmail.com)
