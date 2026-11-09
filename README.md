@@ -10,8 +10,11 @@ Before Practice EHR, I spent two years as a Revenue Management Data Analyst at A
 
 This GitHub is mostly prototypes and side projects. I use them to test product ideas quickly before they go to a team.
 
-**Product prototypes**
-- [unified-tagging-system](https://github.com/mibbrahim/unified-tagging-system): an interactive prototype for a recruitment marketplace (PM case study)
+**Practice EHR prototypes**
+- [EHR documents with AI summaries](https://pehr-documents.vercel.app): a Documents tab prototype with AI document summaries
+- [Billing call center](https://ivr-fallback.vercel.app): a billing call center prototype
+
+**Other prototypes**
 - [coveragecat-redesign](https://github.com/mibbrahim/coveragecat-redesign): a site redesign with a live insurance Q&A agent
 - [spotter-weather-truck-routing](https://github.com/mibbrahim/spotter-weather-truck-routing): weather-aware truck routing
 
